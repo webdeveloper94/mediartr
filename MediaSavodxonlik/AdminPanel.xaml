@@ -1,0 +1,16 @@
+<Window x:Class="MediaSavodxonlik.AdminPanel" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="MediaLab · Resurslarni boshqarish" Width="720" Height="650" MinWidth="620" MinHeight="560" WindowStartupLocation="CenterOwner" Background="#101E30" Foreground="#F1F5F9" FontFamily="Segoe UI">
+ <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="28">
+  <TextBlock Text="ADMIN PANEL" FontSize="10" Foreground="#5EEAD4" FontWeight="Bold"/><TextBlock Text="Mavzu va materiallar" FontSize="28" FontWeight="SemiBold" Margin="0,10,0,20"/>
+  <TextBlock Text="Mavzuni tanlang" Foreground="#93A4BA"/><ComboBox x:Name="Topics" DisplayMemberPath="Label" SelectionChanged="ChooseTopic" Margin="0,8,0,16" Padding="8"/>
+  <TextBlock Text="Mavzu nomi" Foreground="#93A4BA"/><TextBox x:Name="TopicName" MaxLength="200" Background="#172B40" Foreground="#F1F5F9" Padding="10" Margin="0,8,0,10"/>
+  <Button x:Name="SaveButton" Content="✓  Mavzu nomini saqlash" Click="SaveTopic" Background="#214744" Foreground="#99F6E4" HorizontalAlignment="Left"/>
+  <Border Height="1" Background="#2A3E55" Margin="0,22"/>
+  <TextBlock Text="Fayl resurslari" FontSize="20" FontWeight="SemiBold"/>
+  <ComboBox x:Name="ResourceType" SelectedIndex="0" SelectionChanged="ChooseResource" Margin="0,12" Padding="8"><ComboBoxItem Content="Ma’ruza" Tag="lecture"/><ComboBoxItem Content="Video / media" Tag="media"/><ComboBoxItem Content="Taqdimot" Tag="slides"/></ComboBox>
+  <Button x:Name="ImportButton" Content="＋  Fayl yuklash" Click="ImportFile" Background="#2DD4BF" Foreground="#082C30" HorizontalAlignment="Left"/>
+  <TextBlock x:Name="Status" Foreground="#5EEAD4" TextWrapping="Wrap" Margin="0,12"/>
+  <ItemsControl x:Name="Files"><ItemsControl.ItemTemplate><DataTemplate><Border Background="#172B40" CornerRadius="8" Padding="10" Margin="0,0,0,6"><TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12"/></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+  <TextBlock Text="Metodlar, ko‘rgazmali materiallar, baholash va glossariy mazmuni TopicPages.cs faylida yoziladi. O‘quvchi sahifasida tahrirlash maydoni bo‘lmaydi." Foreground="#93A4BA" TextWrapping="Wrap" Margin="0,20,0,10"/>
+  <TextBlock x:Name="FolderLabel" Foreground="#657992" TextWrapping="Wrap" FontSize="10"/>
+ </StackPanel></ScrollViewer>
+</Window>

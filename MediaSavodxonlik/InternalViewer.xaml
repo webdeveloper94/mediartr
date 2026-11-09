@@ -1,0 +1,17 @@
+<UserControl x:Class="MediaSavodxonlik.InternalViewer" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:wv="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf">
+ <Border x:Name="ViewerBorder" Background="#111E30" BorderBrush="#345168" BorderThickness="1" CornerRadius="12" Padding="14">
+  <Grid>
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+   <DockPanel x:Name="ViewerToolbar" Margin="0,0,0,10"><Button Content="×  Yopish" DockPanel.Dock="Right" Click="CloseViewer" Padding="8,5"/><TextBlock x:Name="FileTitle" Foreground="#F1F5F9" FontSize="15" TextWrapping="Wrap" VerticalAlignment="Center"/></DockPanel>
+   <TextBlock x:Name="Status" Grid.Row="1" Foreground="#99F6E4" TextWrapping="Wrap" Margin="0,0,0,8"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+   <Grid Grid.Row="2">
+    <wv:WebView2CompositionControl x:Name="Browser" Visibility="Collapsed"/>
+    <ScrollViewer x:Name="ImageArea" Visibility="Collapsed"><Image x:Name="Picture" Stretch="Uniform"/></ScrollViewer>
+    <Grid x:Name="VideoArea" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <MediaElement x:Name="Player" LoadedBehavior="Manual" UnloadedBehavior="Close" Stretch="Uniform" MediaOpened="VideoOpened" MediaFailed="VideoFailed" MediaEnded="VideoEnded"/>
+     <StackPanel Grid.Row="1" Margin="0,12,0,0"><Slider x:Name="Seek" Minimum="0" Maximum="1" PreviewMouseLeftButtonDown="StartSeek" PreviewMouseLeftButtonUp="EndSeek"/><DockPanel><TextBlock x:Name="PositionLabel" DockPanel.Dock="Right" Foreground="#93A4BA" VerticalAlignment="Center"/><Button Content="▶ O‘ynatish" Click="PlayVideo" HorizontalAlignment="Left"/><Button Content="Ⅱ Pauza" Click="PauseVideo" HorizontalAlignment="Left"/></DockPanel></StackPanel>
+    </Grid>
+   </Grid>
+  </Grid>
+ </Border>
+</UserControl>
