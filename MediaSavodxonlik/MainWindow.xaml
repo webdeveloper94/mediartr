@@ -2,8 +2,22 @@
  Title="Media va axborot savodxonligi · RTR" Width="1440" Height="920" MinWidth="1060" MinHeight="720" WindowStartupLocation="CenterScreen" Background="#0B1220" Foreground="#F1F5F9" FontFamily="Segoe UI" UseLayoutRounding="True">
  <Grid Background="#0B1220">
   <Grid.ColumnDefinitions><ColumnDefinition Width="246"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Grid Grid.ColumnSpan="2" IsHitTestVisible="False">
+   <Border>
+    <Border.Background><ImageBrush ImageSource="Assets/HomeWallpaper.png" Stretch="UniformToFill" Opacity="0.82"/></Border.Background>
+   </Border>
+   <Border>
+    <Border.Background>
+     <LinearGradientBrush StartPoint="0,0" EndPoint="0.85,1">
+      <GradientStop Color="#84130D25"/>
+      <GradientStop Color="#5910192F" Offset="0.55"/>
+      <GradientStop Color="#94101B32" Offset="1"/>
+     </LinearGradientBrush>
+    </Border.Background>
+   </Border>
+  </Grid>
   <!-- Native vector graphics and transform-only animations: no blur or bitmap effects. -->
-  <Border Background="#0E1828" BorderBrush="#213047" BorderThickness="0,0,1,0">
+  <Border Background="#D90E1828" BorderBrush="#44DDE8FF" BorderThickness="0,0,1,0">
    <DockPanel Margin="20,27,20,20">
     <StackPanel DockPanel.Dock="Top">
      <StackPanel Orientation="Horizontal" Margin="8,0,0,34">
@@ -12,15 +26,24 @@
      </StackPanel>
      <TextBlock Text="O‘QUV MAYDONI" Foreground="#657992" FontSize="10" FontWeight="SemiBold" Margin="15,0,0,12"/>
      <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#17363C" Foreground="#5EEAD4" Tag="home" Click="Navigate"><TextBlock Text="⌂    Bosh sahifa"/></Button>
-     <Button Style="{StaticResource Nav}" Tag="theory" Click="Navigate"><TextBlock Text="▤    Nazariy mashg‘ulotlar"/></Button>
-     <Button Style="{StaticResource Nav}" Tag="practice" Click="Navigate"><TextBlock Text="⌘    Amaliy mashg‘ulotlar"/></Button>
-     <Button Style="{StaticResource Nav}" Tag="media" Click="Navigate"><TextBlock Text="▷    Media kutubxona"/></Button>
-     <Button Style="{StaticResource Nav}" Tag="tests" Click="Navigate"><TextBlock Text="✓    Bilimni sinash"/></Button>
-     <Button Style="{StaticResource Nav}" Tag="glossary" Click="Navigate"><TextBlock Text="Aa   Glossariy"/></Button>
+     <Button x:Name="IndependentNav" Style="{StaticResource Nav}" Tag="independent" Click="Navigate" Content="▤    Mustaqil ta’lim"/>
+     <Button x:Name="MediaNav" Style="{StaticResource Nav}" Tag="media" Click="Navigate"><TextBlock Text="▷    Media kutubxona"/></Button>
+     <Button x:Name="TestsNav" Style="{StaticResource Nav}" Tag="tests" Click="Navigate"><TextBlock Text="✓    Yakuniy nazorat"/></Button>
+     <Button x:Name="GlossaryNav" Style="{StaticResource Nav}" Tag="glossary" Click="Navigate"><TextBlock Text="Aa   Glossariy"/></Button>
      <Border Height="1" Background="#233047" Margin="14,22"/>
-     <Button Style="{StaticResource Nav}" Tag="about" Click="Navigate"><TextBlock Text="ⓘ    Modul haqida"/></Button>
+     <Button x:Name="AuthorNav" Style="{StaticResource Nav}" Tag="author" Click="Navigate"><TextBlock Text="ⓘ    Muallif"/></Button>
     </StackPanel>
     <StackPanel DockPanel.Dock="Bottom">
+     <Border Background="#142638" CornerRadius="12" Padding="14,11" Margin="0,0,0,14" BorderBrush="#263E56" BorderThickness="1">
+      <StackPanel>
+       <DockPanel>
+        <TextBlock Text="O‘QUV PROGRESSI" Foreground="#5EEAD4" FontSize="9" FontWeight="Bold"/>
+        <TextBlock x:Name="ProgressPercentage" Text="0%" Foreground="#99F6E4" FontSize="10" FontWeight="Bold" HorizontalAlignment="Right"/>
+       </DockPanel>
+       <ProgressBar x:Name="CourseProgressBar" Value="0" Maximum="20" Height="6" Margin="0,7,0,7" Background="#0E1828" Foreground="#2DD4BF" BorderThickness="0"/>
+       <TextBlock x:Name="ProgressDetail" Text="0 / 20 mavzu ko‘rildi" Foreground="#93A4BA" FontSize="10"/>
+      </StackPanel>
+     </Border>
      <Border Background="#142638" CornerRadius="12" Padding="16" Margin="0,0,0,16">
       <StackPanel><TextBlock Text="Ongli raqamli avlod" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="Har bir xabarga savol bilan,&#10;har bir manbaga e’tibor bilan." Foreground="#93A4BA" FontSize="11" LineHeight="19" Margin="0,8,0,0"/></StackPanel>
      </Border>
@@ -34,54 +57,108 @@
    <Grid.RowDefinitions><RowDefinition Height="76"/><RowDefinition Height="*"/></Grid.RowDefinitions>
    <Border BorderBrush="#213047" BorderThickness="0,0,0,1" Padding="32,0">
     <DockPanel VerticalAlignment="Center">
-     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right"><Ellipse Width="6" Height="6" Fill="#2DD4BF" Margin="0,0,8,0"/><TextBlock Text="Mustaqil ta’lim uchun" Foreground="#93A4BA" FontSize="12" VerticalAlignment="Center"/></StackPanel>
-     <TextBlock x:Name="Breadcrumb" Text="O‘quv maydoni   /   Bosh sahifa" Foreground="#93A4BA" VerticalAlignment="Center" FontSize="12"/>
+     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right"><Ellipse Width="6" Height="6" Fill="#2DD4BF" Margin="0,0,8,0"/><TextBlock Text="Auditoriya mashg‘ulotlari uchun" Foreground="#93A4BA" FontSize="12" VerticalAlignment="Center"/></StackPanel>
+     <TextBlock x:Name="Breadcrumb" Text="O‘quv maydoni   /   Bosh sahifa" Foreground="#D2E0EE" VerticalAlignment="Center" FontSize="14" TextTrimming="CharacterEllipsis"/>
     </DockPanel>
    </Border>
    <ScrollViewer x:Name="PageScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,0,145">
     <Grid Margin="32,27,32,24">
      <StackPanel x:Name="HomePanel">
       <Grid Margin="0,0,0,23"><TextBlock Text="Bugun yangi nigoh bilan boshlang." FontSize="13" Foreground="#93A4BA"/><TextBlock Text="O‘RGANING. TAHLIL QILING. YARATING." HorizontalAlignment="Right" FontSize="9" Foreground="#657992" VerticalAlignment="Center"/></Grid>
-      <Border CornerRadius="20" BorderBrush="#294359" BorderThickness="1" ClipToBounds="True">
-       <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0.8"><GradientStop Color="#122B3B"/><GradientStop Color="#152238" Offset="0.6"/><GradientStop Color="#201E3B" Offset="1"/></LinearGradientBrush></Border.Background>
+      <Border CornerRadius="20" Background="#80111A2F" BorderBrush="#66DDE8FF" BorderThickness="1">
        <Grid MinHeight="330">
         <Grid.ColumnDefinitions><ColumnDefinition Width="1.2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <StackPanel Margin="30,29,0,28" VerticalAlignment="Center">
-         <StackPanel Orientation="Horizontal"><Border Background="#19433F" CornerRadius="5" Padding="9,5"><TextBlock Text="40 SOATLIK MODUL" FontSize="9" FontWeight="Bold" Foreground="#5EEAD4"/></Border><TextBlock Text="  /  KASBIY TA’LIM" FontSize="9" Foreground="#93A4BA" VerticalAlignment="Center"/></StackPanel>
+         <StackPanel Orientation="Horizontal"><Border Background="#19433F" CornerRadius="5" Padding="9,5"><TextBlock Text="40 SOAT AUDITORIYA" FontSize="9" FontWeight="Bold" Foreground="#5EEAD4"/></Border><TextBlock Text="  /  KASBIY TA’LIM" FontSize="9" Foreground="#93A4BA" VerticalAlignment="Center"/></StackPanel>
          <TextBlock Text="Media va axborot" FontSize="35" FontWeight="Bold" Margin="0,16,0,0"/><TextBlock Text="savodxonligi" FontSize="35" Foreground="#5EEAD4" FontWeight="Bold" Margin="0,-2,0,0"/>
          <TextBlock Text="Axborotni tekshiring. Ongli qaror qiling." FontSize="14" Foreground="#D2DFE9" Margin="0,13,0,0"/>
          <TextBlock Text="Raqamli dunyoni anglash, manbalarni baholash&#10;va axborotdan mas’uliyat bilan foydalanish sari." FontSize="12" Foreground="#93A4BA" LineHeight="21" Margin="0,8,0,20"/>
          <StackPanel Orientation="Horizontal"><Button Background="#2DD4BF" Foreground="#082C30" FontWeight="SemiBold" Padding="18,12" Tag="topics" Click="Navigate" Content="Mavzular · 20 ta   →"/><Button Margin="9,0,0,0" Padding="14,12" BorderBrush="#3C5367" BorderThickness="1" Tag="about" Click="Navigate" Content="Modul haqida"/></StackPanel>
         </StackPanel>
-        <Viewbox Grid.Column="1" Margin="5,12,12,12" MaxWidth="430">
-         <Canvas Width="400" Height="320">
-          <Ellipse Width="254" Height="254" Stroke="#304158" StrokeThickness="1" Canvas.Left="74" Canvas.Top="35"/>
-          <Ellipse Width="196" Height="196" Stroke="#395063" StrokeThickness="1" StrokeDashArray="3,7" Canvas.Left="103" Canvas.Top="64"/>
-          <Line X1="100" Y1="99" X2="203" Y2="162" Stroke="#3C827D"/><Line X1="310" Y1="79" X2="203" Y2="162" Stroke="#5C508A"/><Line X1="313" Y1="244" X2="203" Y2="162" Stroke="#3C827D"/><Line X1="81" Y1="244" X2="203" Y2="162" Stroke="#4D587E"/>
-          <Border Width="114" Height="130" Background="#153F46" BorderBrush="#3BD8C3" BorderThickness="1.5" CornerRadius="24" Canvas.Left="146" Canvas.Top="97">
-           <StackPanel VerticalAlignment="Center"><TextBlock Text="◈" FontSize="48" HorizontalAlignment="Center" Foreground="#5EEAD4"/><TextBlock Text="ONG + TAHLIL" FontSize="10" HorizontalAlignment="Center" FontWeight="Bold" Foreground="#99F6E4" Margin="0,7,0,0"/></StackPanel>
+        <Border Grid.Column="1" Margin="12,20,24,20" Padding="18" MaxWidth="460" VerticalAlignment="Center"
+                 Background="#BC152638" BorderBrush="#73DDE8FF" BorderThickness="1" CornerRadius="16">
+         <StackPanel>
+          <TextBlock Text="Faktcheking mashqi · 10-mavzu" Foreground="#5EEAD4" FontSize="12" FontWeight="SemiBold"/>
+          <TextBlock Text="Xabarni qanday tekshirasiz?" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,8,0,10"/>
+          <Border Background="#A90E1828" CornerRadius="8" Padding="10">
+           <TextBlock Text="«Ertaga barcha darslar onlayn bo‘ladi!» Xabarda manba ko‘rsatilmagan." TextWrapping="Wrap"/>
           </Border>
-          <Border x:Name="FloatOne" Canvas.Left="16" Canvas.Top="59" Background="#1A3043" BorderBrush="#3C586E" BorderThickness="1" CornerRadius="12" Padding="14,12"><Border.RenderTransform><TranslateTransform/></Border.RenderTransform><StackPanel Orientation="Horizontal"><TextBlock Text="✓" Foreground="#2DD4BF" FontSize="22" Margin="0,0,10,0"/><StackPanel><TextBlock Text="FAKTCHEKING" FontSize="9" Foreground="#5EEAD4" FontWeight="Bold"/><TextBlock Text="Manbani tekshiring" FontSize="11" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
-          <Border x:Name="FloatTwo" Canvas.Left="267" Canvas.Top="44" Background="#2A2546" BorderBrush="#635489" BorderThickness="1" CornerRadius="12" Padding="15,10"><Border.RenderTransform><TranslateTransform/></Border.RenderTransform><StackPanel><TextBlock Text="▷" FontSize="27" Foreground="#C4B5FD" HorizontalAlignment="Center"/><TextBlock Text="MEDIA" FontSize="9" Foreground="#C4B5FD" Margin="0,3,0,0"/></StackPanel></Border>
-          <Border Canvas.Left="22" Canvas.Top="222" Background="#212C45" BorderBrush="#475776" BorderThickness="1" CornerRadius="10" Padding="13,11"><TextBlock Text="Aa   Raqamli madaniyat" FontSize="11" Foreground="#C5D2E6"/></Border>
-          <Border x:Name="FloatThree" Canvas.Left="256" Canvas.Top="226" Background="#163B3D" BorderBrush="#33716B" BorderThickness="1" CornerRadius="10" Padding="13,11"><Border.RenderTransform><TranslateTransform/></Border.RenderTransform><TextBlock Text="◇   Xavfsiz muhit" FontSize="11" Foreground="#99F6E4"/></Border>
-          <Ellipse Width="7" Height="7" Fill="#2DD4BF" Canvas.Left="197" Canvas.Top="31"/><Ellipse Width="5" Height="5" Fill="#A78BFA" Canvas.Left="325" Canvas.Top="153"/><Ellipse Width="5" Height="5" Fill="#5EEAD4" Canvas.Left="151" Canvas.Top="282"/>
-         </Canvas>
-        </Viewbox>
+          <Button Tag="source" Click="CheckFact" Content="Rasmiy e’lonni qidiraman" Background="#BB214744" Foreground="#99F6E4" Margin="0,10,0,4" Padding="10,7"/>
+          <Button Tag="shares" Click="CheckFact" Content="Ulashishlar soniga qarayman" BorderBrush="#668BA8C5" BorderThickness="1" Padding="10,7"/>
+          <StackPanel x:Name="FactResult" Visibility="Collapsed" Margin="0,10,0,0">
+           <TextBlock x:Name="FactFeedback" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+           <Button Click="OpenFactTopic" Content="10-mavzuga o‘tish →" Foreground="#5EEAD4" Padding="0,8,0,0"/>
+          </StackPanel>
+         </StackPanel>
+        </Border>
        </Grid>
       </Border>
       <UniformGrid Columns="3" Margin="0,19,0,27">
-       <Border BorderBrush="#26354A" BorderThickness="0,0,1,0" Padding="5,4"><StackPanel Orientation="Horizontal"><TextBlock Text="40" FontSize="29" FontWeight="SemiBold"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Jami o‘quv yuklamasi" FontSize="12"/><TextBlock Text="soat · to‘liq modul" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
-       <Border BorderBrush="#26354A" BorderThickness="0,0,1,0" Padding="24,4"><StackPanel Orientation="Horizontal"><TextBlock Text="24" FontSize="29" FontWeight="SemiBold" Foreground="#5EEAD4"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Nazariy mashg‘ulotlar" FontSize="12"/><TextBlock Text="soat · bilim va tushuncha" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
-       <Border Padding="24,4"><StackPanel Orientation="Horizontal"><TextBlock Text="16" FontSize="29" FontWeight="SemiBold" Foreground="#C4B5FD"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Amaliy mashg‘ulotlar" FontSize="12"/><TextBlock Text="soat · tahlil va tajriba" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
+       <Border BorderBrush="#26354A" BorderThickness="0,0,1,0" Padding="5,4"><StackPanel Orientation="Horizontal"><TextBlock Text="40" FontSize="29" FontWeight="SemiBold"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Auditoriya yuklamasi" FontSize="12"/><TextBlock Text="soat · 20 ta mavzu" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
+       <Border BorderBrush="#26354A" BorderThickness="0,0,1,0" Padding="24,4"><StackPanel Orientation="Horizontal"><TextBlock Text="22" FontSize="29" FontWeight="SemiBold" Foreground="#5EEAD4"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Nazariy mashg‘ulotlar" FontSize="12"/><TextBlock Text="soat · bilim va tushuncha" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
+       <Border Padding="24,4"><StackPanel Orientation="Horizontal"><TextBlock Text="18" FontSize="29" FontWeight="SemiBold" Foreground="#C4B5FD"/><StackPanel Margin="13,3,0,0"><TextBlock Text="Amaliy mashg‘ulotlar" FontSize="12"/><TextBlock Text="soat · tahlil va tajriba" FontSize="10" Foreground="#93A4BA" Margin="0,4,0,0"/></StackPanel></StackPanel></Border>
       </UniformGrid>
       <Grid Margin="0,0,0,15"><TextBlock Text="Bilimdan — amaliyotga" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="O‘zingizga kerakli bo‘limni tanlang" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="#93A4BA"/></Grid>
       <UniformGrid Columns="3">
-       <Button Style="{StaticResource Card}" Margin="0,0,10,0" Tag="theory" Click="Navigate"><StackPanel><TextBlock Text="▤" FontSize="26" Foreground="#5EEAD4"/><TextBlock Text="Nazariy bilimlar     ↗" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8"/><TextBlock Text="Asosiy tushunchalar, ishonchli&#10;manbalar va o‘qish materiallari." Foreground="#93A4BA" FontSize="11" LineHeight="19"/><TextBlock Text="NAZARIYA  /  24 SOAT" Foreground="#5EEAD4" FontSize="9" FontWeight="SemiBold" Margin="0,19,0,0"/></StackPanel></Button>
-       <Button Style="{StaticResource Card}" Margin="5,0,5,0" Tag="practice" Click="Navigate"><StackPanel><TextBlock Text="⌘" FontSize="26" Foreground="#C4B5FD"/><TextBlock Text="Amaliy mashg‘ulotlar  ↗" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8"/><TextBlock Text="Axborotni tahlil qilish va bilimni&#10;real vaziyatlarda qo‘llash." Foreground="#93A4BA" FontSize="11" LineHeight="19"/><TextBlock Text="AMALIYOT  /  16 SOAT" Foreground="#C4B5FD" FontSize="9" FontWeight="SemiBold" Margin="0,19,0,0"/></StackPanel></Button>
-       <Button Style="{StaticResource Card}" Margin="10,0,0,0" Tag="tests" Click="Navigate"><StackPanel><TextBlock Text="✓" FontSize="26" Foreground="#F4C67A"/><TextBlock Text="O‘zingizni sinang     ↗" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8"/><TextBlock Text="Savollar va topshiriqlar orqali&#10;o‘z bilimingizni baholang." Foreground="#93A4BA" FontSize="11" LineHeight="19"/><TextBlock Text="MUSTAQIL BAHOLASH" Foreground="#F4C67A" FontSize="9" FontWeight="SemiBold" Margin="0,19,0,0"/></StackPanel></Button>
+       <Button Margin="0,0,10,0" Tag="theory" Click="Navigate"
+               MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave"
+               Background="#A9131F32" BorderBrush="#59DDE8FF" BorderThickness="1" Padding="15"
+               HorizontalContentAlignment="Stretch" AutomationProperties.Name="Nazariy bilimlar">
+        <StackPanel>
+         <Border CornerRadius="11" Padding="10">
+          <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#A619243B"/><GradientStop Color="#BD174757" Offset="1"/></LinearGradientBrush></Border.Background>
+          <DockPanel>
+           <Border DockPanel.Dock="Left" Width="43" Height="43" CornerRadius="10" Background="#66101A29" Margin="0,0,10,0">
+            <TextBlock Text="&#xE82D;" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="#67E8F9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           </Border>
+           <TextBlock Text="→" FontSize="20" Foreground="#67E8F9" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+          </DockPanel>
+         </Border>
+         <TextBlock Text="Nazariy bilimlar" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,5"/>
+         <TextBlock Text="Asosiy tushunchalar va ishonchli axborot manbalari bilan tanishing." Foreground="#D1DFEC" FontSize="14" LineHeight="21" TextWrapping="Wrap"/>
+         <TextBlock Text="11 mavzu · 22 soat" Foreground="#67E8F9" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,0"/>
+        </StackPanel>
+       </Button>
+       <Button Margin="5,0,5,0" Tag="practice" Click="Navigate"
+               MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave"
+               Background="#A9131F32" BorderBrush="#59DDE8FF" BorderThickness="1" Padding="15"
+               HorizontalContentAlignment="Stretch" AutomationProperties.Name="Amaliy mashg‘ulotlar">
+        <StackPanel>
+         <Border CornerRadius="11" Padding="10">
+          <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#A619243B"/><GradientStop Color="#BD443361" Offset="1"/></LinearGradientBrush></Border.Background>
+          <DockPanel>
+           <Border DockPanel.Dock="Left" Width="43" Height="43" CornerRadius="10" Background="#66101A29" Margin="0,0,10,0">
+            <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="#C4B5FD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           </Border>
+           <TextBlock Text="→" FontSize="20" Foreground="#C4B5FD" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+          </DockPanel>
+         </Border>
+         <TextBlock Text="Amaliy mashg‘ulotlar" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,5"/>
+         <TextBlock Text="Axborotni tahlil qiling va bilimni real vaziyatlarda qo‘llang." Foreground="#D1DFEC" FontSize="14" LineHeight="21" TextWrapping="Wrap"/>
+         <TextBlock Text="9 mavzu · 18 soat" Foreground="#C4B5FD" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,0"/>
+        </StackPanel>
+       </Button>
+       <Button Margin="10,0,0,0" Tag="tests" Click="Navigate"
+               MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave"
+               Background="#A9131F32" BorderBrush="#59DDE8FF" BorderThickness="1" Padding="15"
+               HorizontalContentAlignment="Stretch" AutomationProperties.Name="Yakuniy nazorat">
+        <StackPanel>
+         <Border CornerRadius="11" Padding="10">
+          <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#A619243B"/><GradientStop Color="#BD542D53" Offset="1"/></LinearGradientBrush></Border.Background>
+          <DockPanel>
+           <Border DockPanel.Dock="Left" Width="43" Height="43" CornerRadius="10" Background="#66101A29" Margin="0,0,10,0">
+            <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="#F9A8D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           </Border>
+           <TextBlock Text="→" FontSize="20" Foreground="#F9A8D4" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0"/>
+          </DockPanel>
+         </Border>
+         <TextBlock Text="Yakuniy nazorat" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,5"/>
+         <TextBlock Text="Testni yeching yoki nazorat savollari variantini tanlang." Foreground="#D1DFEC" FontSize="14" LineHeight="21" TextWrapping="Wrap"/>
+         <TextBlock Text="10 test savoli yoki 15 variant" Foreground="#F9A8D4" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,0"/>
+        </StackPanel>
+       </Button>
       </UniformGrid>
-      <Border BorderBrush="#26354A" BorderThickness="0,1,0,0" Margin="0,25,0,0" Padding="0,15,0,0"><DockPanel><TextBlock DockPanel.Dock="Right" Text="TANQIDIY FIKRLASH · RAQAMLI MAS’ULIYAT" FontSize="9" Foreground="#657992"/><TextBlock Text="MediaLab  /  Media va axborot savodxonligi" FontSize="10" Foreground="#93A4BA"/></DockPanel></Border>
+      <Border BorderBrush="#26354A" BorderThickness="0,1,0,0" Margin="0,25,0,0" Padding="0,15,0,0"><DockPanel><TextBlock DockPanel.Dock="Right" Text="TANQIDIY FIKRLASH · RAQAMLI MAS’ULIYAT" FontSize="12" Foreground="#BACBDD"/><TextBlock Text="MediaLab  /  Media va axborot savodxonligi" FontSize="13" Foreground="#D1DFEC"/></DockPanel></Border>
      </StackPanel>
      <StackPanel x:Name="TopicsPanel" Visibility="Collapsed">
       <Button Tag="home" Click="Navigate" Foreground="#5EEAD4" Padding="0,8" Content="←  Bosh sahifaga qaytish" HorizontalAlignment="Left"/>
@@ -89,31 +166,47 @@
        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#12373D"/><GradientStop Color="#19263C" Offset="0.55"/><GradientStop Color="#292344" Offset="1"/></LinearGradientBrush></Border.Background>
        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
         <StackPanel><TextBlock Text="SIZNING O‘QUV XARITANGIZ" Foreground="#5EEAD4" FontSize="10" FontWeight="SemiBold"/>
-         <TextBlock Text="Har bir mavzu — yangi nigoh." FontSize="29" FontWeight="Bold" TextWrapping="Wrap" Margin="0,12,0,10"/>
-         <TextBlock Text="Izlaning. Savol bering. Axborot ortidagi ma’noni anglang." TextWrapping="Wrap" Foreground="#BBCDDD" FontSize="13"/>
-         <StackPanel Orientation="Horizontal" Margin="0,22,0,0"><Border Background="#214744" CornerRadius="7" Padding="12,7"><TextBlock Text="20 TA MAVZU" Foreground="#99F6E4" FontSize="10" FontWeight="Bold"/></Border><Border Background="#26354B" CornerRadius="7" Padding="12,7" Margin="8,0,0,0"><TextBlock Text="40 SOAT" Foreground="#DDD6FE" FontSize="10" FontWeight="Bold"/></Border></StackPanel>
+         <TextBlock x:Name="TopicsHeading" Text="Mavzular" FontSize="29" FontWeight="Bold" TextWrapping="Wrap" Margin="0,12,0,10"/>
+         <TextBlock x:Name="TopicsSummary" Text="11 ta nazariy va 9 ta amaliy mashg‘ulot" TextWrapping="Wrap" Foreground="#BBCDDD" FontSize="13"/>
+         <StackPanel Orientation="Horizontal" Margin="0,22,0,0"><Border Background="#214744" CornerRadius="7" Padding="12,7"><TextBlock x:Name="TopicsBadge" Text="20 TA MAVZU" Foreground="#99F6E4" FontSize="10" FontWeight="Bold"/></Border><Border Background="#26354B" CornerRadius="7" Padding="12,7" Margin="8,0,0,0"><TextBlock x:Name="HoursBadge" Text="40 SOAT" Foreground="#DDD6FE" FontSize="10" FontWeight="Bold"/></Border></StackPanel>
         </StackPanel>
-        <Viewbox Grid.Column="1" Margin="20,0,0,0"><Grid Width="150" Height="150"><Ellipse Stroke="#536180" StrokeThickness="1" Margin="4"/><Ellipse Stroke="#58726D" StrokeThickness="1" StrokeDashArray="2,5" Margin="20"/><Border Background="#203E48" BorderBrush="#52CDBF" BorderThickness="1" CornerRadius="22" Width="88" Height="88" RenderTransformOrigin="0.5,0.5"><Border.RenderTransform><RotateTransform Angle="-8"/></Border.RenderTransform><StackPanel VerticalAlignment="Center"><TextBlock Text="20" FontSize="35" FontWeight="Bold" Foreground="#99F6E4" HorizontalAlignment="Center"/><TextBlock Text="YANGI QADAM" FontSize="8" Foreground="#BAC8D9" HorizontalAlignment="Center"/></StackPanel></Border><Ellipse Fill="#2DD4BF" Width="9" Height="9" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,25,14,0"/><Ellipse Fill="#A78BFA" Width="7" Height="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="18,0,0,18"/></Grid></Viewbox>
+        <Viewbox Grid.Column="1" Margin="20,0,0,0"><Grid Width="150" Height="150"><Ellipse Stroke="#536180" StrokeThickness="1" Margin="4"/><Ellipse Stroke="#58726D" StrokeThickness="1" StrokeDashArray="2,5" Margin="20"/><Border Background="#203E48" BorderBrush="#52CDBF" BorderThickness="1" CornerRadius="22" Width="88" Height="88" RenderTransformOrigin="0.5,0.5"><Border.RenderTransform><RotateTransform Angle="-8"/></Border.RenderTransform><StackPanel VerticalAlignment="Center"><TextBlock x:Name="TopicsIllustrationCount" Text="20" FontSize="35" FontWeight="Bold" Foreground="#99F6E4" HorizontalAlignment="Center"/><TextBlock Text="YANGI QADAM" FontSize="8" Foreground="#BAC8D9" HorizontalAlignment="Center"/></StackPanel></Border><Ellipse Fill="#2DD4BF" Width="9" Height="9" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,25,14,0"/><Ellipse Fill="#A78BFA" Width="7" Height="7" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="18,0,0,18"/></Grid></Viewbox>
        </Grid>
       </Border>
       <Grid Margin="0,0,12,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="280"/></Grid.ColumnDefinitions>
        <StackPanel VerticalAlignment="Center"><TextBlock Text="O‘quv mavzulari" FontSize="22" FontWeight="SemiBold"/><TextBlock x:Name="TopicCount" Text="20 ta mavzu · o‘z qadamingizda o‘rganing" FontSize="11" Foreground="#93A4BA" Margin="0,6,0,0"/></StackPanel>
-       <Border Grid.Column="1" Background="#152238" BorderBrush="#34475F" BorderThickness="1" CornerRadius="10" Padding="12,8"><StackPanel><TextBlock Text="Mavzu raqami bo‘yicha qidirish" FontSize="10" Foreground="#93A4BA" Margin="0,0,0,4"/><DockPanel><Button DockPanel.Dock="Right" Content="×" Padding="6,0" Click="ClearTopicSearch" ToolTip="Qidiruvni tozalash" AutomationProperties.Name="Qidiruvni tozalash"/><TextBox x:Name="TopicSearch" TextChanged="SearchTopics" Background="Transparent" Foreground="#F1F5F9" CaretBrush="#2DD4BF" BorderThickness="0" FontSize="14" VerticalContentAlignment="Center" AutomationProperties.Name="Mavzu raqami bo‘yicha qidirish"/></DockPanel></StackPanel></Border>
+       <Border Grid.Column="1" Background="#152238" BorderBrush="#34475F" BorderThickness="1" CornerRadius="10" Padding="12,8"><StackPanel><TextBlock Text="Mavzu nomi yoki raqami bo‘yicha qidirish" FontSize="10" Foreground="#93A4BA" Margin="0,0,0,4"/><DockPanel><Button DockPanel.Dock="Right" Content="×" Padding="6,0" Click="ClearTopicSearch" ToolTip="Qidiruvni tozalash" AutomationProperties.Name="Qidiruvni tozalash"/><TextBox x:Name="TopicSearch" TextChanged="SearchTopics" Background="Transparent" Foreground="#F1F5F9" CaretBrush="#2DD4BF" BorderThickness="0" FontSize="14" VerticalContentAlignment="Center" AutomationProperties.Name="Mavzu nomi yoki raqami bo‘yicha qidirish"/></DockPanel></StackPanel></Border>
       </Grid>
-      <TextBlock Text="Mavzu nomlari va materiallar tasdiqlangan reja asosida kiritiladi." Foreground="#657992" FontSize="11" Margin="0,0,0,18" TextWrapping="Wrap"/>
-      <Border x:Name="NoTopics" Visibility="Collapsed" Background="#152238" CornerRadius="12" Padding="28" Margin="0,0,12,12"><StackPanel><TextBlock Text="Mavzu topilmadi" FontSize="20"/><TextBlock Text="1 dan 20 gacha mavzu raqamini kiriting yoki qidiruvni tozalang." Foreground="#93A4BA" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel></Border>
+      <Border x:Name="NoTopics" Visibility="Collapsed" Background="#152238" CornerRadius="12" Padding="28" Margin="0,0,12,12"><StackPanel><TextBlock Text="Mavzu topilmadi" FontSize="20"/><TextBlock Text="Boshqa nom yoki raqam kiriting yoki qidiruvni tozalang." Foreground="#93A4BA" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel></Border>
       <ItemsControl x:Name="TopicsList">
        <ItemsControl.ItemContainerStyle><Style TargetType="ContentPresenter"><EventSetter Event="Loaded" Handler="TopicCardLoaded"/></Style></ItemsControl.ItemContainerStyle>
        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
        <ItemsControl.ItemTemplate><DataTemplate>
-        <Button Margin="0,0,12,12" Tag="{Binding Number}" Click="OpenTopic" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}" Padding="21" Background="#131F32" BorderBrush="#2C3C54" BorderThickness="1" MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave">
+        <Button Margin="0,0,12,12" Tag="{Binding Number}" Click="OpenTopic" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}" Padding="21" Background="#B8131F32" BorderBrush="#59DDE8FF" BorderThickness="1" MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave">
          <Button.RenderTransform><TranslateTransform/></Button.RenderTransform>
          <StackPanel>
-          <DockPanel><Border DockPanel.Dock="Right" Background="#23314B" CornerRadius="8" Padding="9,5"><TextBlock Text="↗" Foreground="#C4B5FD" FontSize="17"/></Border><Border Background="#1B3C40" CornerRadius="8" Padding="10,7" HorizontalAlignment="Left"><TextBlock Text="{Binding Label}" Foreground="#5EEAD4" FontSize="10" FontWeight="SemiBold"/></Border></DockPanel>
-          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" Margin="0,14,0,10"/>
-          <TextBlock Text="{Binding Subtitle}" Foreground="#93A4BA" FontSize="12" TextWrapping="Wrap"/>
-          <Border Height="1" Background="#28384D" Margin="0,20,0,13"/>
-          <DockPanel><TextBlock Text="Ochish →" Foreground="#5EEAD4" FontSize="11" DockPanel.Dock="Right"/><TextBlock Text="○  Materiallar kutilmoqda" Foreground="#93A4BA" FontSize="10"/></DockPanel>
+          <Border CornerRadius="12" Padding="12,10">
+           <Grid>
+            <Border CornerRadius="10" Opacity="0.8" IsHitTestVisible="False">
+             <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#162338"/><GradientStop Color="{Binding Surface}" Offset="1"/></LinearGradientBrush></Border.Background>
+            </Border>
+            <DockPanel Margin="8,4">
+            <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="11" Background="#66101A29" Margin="0,0,10,0">
+             <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="{Binding Accent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+             <TextBlock Text="{Binding Label}" Foreground="{Binding Accent}" FontSize="11" FontWeight="SemiBold"/>
+             <TextBlock Text="{Binding Track}" Foreground="#E3EBF5" FontSize="14" TextWrapping="Wrap" Margin="0,3,0,0"/>
+            </StackPanel>
+            </DockPanel>
+           </Grid>
+          </Border>
+          <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="18" FontWeight="SemiBold" Margin="0,14,0,10"/>
+          <Border Height="1" Background="#31445C" Margin="0,7,0,12"/>
+          <DockPanel>
+           <TextBlock Text="Ochish →" Foreground="{Binding Accent}" FontSize="12" FontWeight="SemiBold" DockPanel.Dock="Right"/>
+           <TextBlock Text="{Binding Schedule}" Foreground="#BACBDD" FontSize="12" TextWrapping="Wrap"/>
+          </DockPanel>
          </StackPanel>
         </Button>
        </DataTemplate></ItemsControl.ItemTemplate>
@@ -122,7 +215,7 @@
      <StackPanel x:Name="TopicPanel" Visibility="Collapsed">
       <DockPanel Margin="0,0,0,18">
        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button x:Name="PreviousTopic" Content="← Oldingi" Click="ChangeTopic" Tag="-1" BorderBrush="#34475F" BorderThickness="1" Padding="12,8"/><Button x:Name="NextTopic" Content="Keyingi →" Click="ChangeTopic" Tag="1" BorderBrush="#34475F" BorderThickness="1" Padding="12,8" Margin="8,0,0,0"/></StackPanel>
-       <Button Tag="topics" Click="Navigate" Foreground="#5EEAD4" Padding="0,8" Content="←  Mavzularga qaytish" HorizontalAlignment="Left"/>
+       <Button Click="ReturnToTopicList" Foreground="#5EEAD4" Padding="0,8" Content="←  Mavzular ro‘yxatiga qaytish" HorizontalAlignment="Left"/>
       </DockPanel>
       <Border CornerRadius="20" Padding="28" BorderBrush="#315064" BorderThickness="1">
        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#12373D"/><GradientStop Color="#19263C" Offset="0.6"/><GradientStop Color="#292344" Offset="1"/></LinearGradientBrush></Border.Background>
@@ -137,12 +230,28 @@
       </Border>
       <TextBlock Text="Mavzuni o‘rganish" FontSize="22" FontWeight="SemiBold" Margin="0,25,0,6"/>
       <TextBlock Text="Kerakli resursni tanlang — barchasi bir joyda." Foreground="#93A4BA" FontSize="12" Margin="0,0,0,18"/>
+      <Button x:Name="TopicIndependent" Click="OpenTopicIndependent" Content="Mustaqil ish · 1 soat →"
+              Visibility="Collapsed" HorizontalAlignment="Left" Background="#214744" Foreground="#99F6E4" Margin="0,0,0,12"/>
       <ItemsControl x:Name="TopicResources">
        <ItemsControl.ItemContainerStyle><Style TargetType="ContentPresenter"><EventSetter Event="Loaded" Handler="ResourceCardLoaded"/></Style></ItemsControl.ItemContainerStyle>
        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
        <ItemsControl.ItemTemplate><DataTemplate>
-        <Button Tag="{Binding Key}" Click="OpenResource" MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="ResourceFocusLost" Background="#131F32" BorderBrush="#2C3C54" BorderThickness="1" Padding="14,18" Margin="0,0,8,8" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}">
-         <StackPanel><DockPanel><TextBlock Text="↗" DockPanel.Dock="Right" Foreground="{Binding Color}" FontSize="20"/><Border Background="#21364A" CornerRadius="10" Width="42" Height="42" HorizontalAlignment="Left"><TextBlock Text="{Binding Icon}" Foreground="{Binding Color}" FontSize="23" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></DockPanel><TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,14,0,8"/><TextBlock Text="{Binding ModeLabel}" Foreground="#93A4BA" FontSize="11" Margin="0,0,0,17"/><Border Height="1" Background="#29394E"/><TextBlock Text="Resursni ochish →" Foreground="{Binding Color}" FontSize="11" Margin="0,13,0,0"/></StackPanel>
+        <Button Tag="{Binding Key}" Click="OpenResource" MouseEnter="TopicHover" MouseLeave="TopicLeave" GotKeyboardFocus="TopicHover" LostKeyboardFocus="TopicLeave" Background="#131F32" BorderBrush="#2C3C54" BorderThickness="1" Padding="14,18" Margin="0,0,8,8" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Title}">
+         <StackPanel>
+          <Border CornerRadius="11" Padding="10">
+           <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#162338"/><GradientStop Color="{Binding Surface}" Offset="1"/></LinearGradientBrush></Border.Background>
+           <DockPanel>
+            <Border DockPanel.Dock="Left" Background="#66101A29" CornerRadius="10" Width="46" Height="46" Margin="0,0,10,0">
+             <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" Foreground="{Binding Color}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Text="↗" Foreground="{Binding Color}" FontSize="18" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0"/>
+           </DockPanel>
+          </Border>
+          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,5"/>
+          <TextBlock Text="{Binding Description}" Foreground="#D1DFEC" FontSize="14" TextWrapping="Wrap"/>
+          <Border Height="1" Background="#31445C" Margin="0,12,0,10"/>
+          <TextBlock Text="Resursni ochish →" Foreground="{Binding Color}" FontSize="12" FontWeight="SemiBold"/>
+         </StackPanel>
         </Button>
        </DataTemplate></ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -152,20 +261,63 @@
       <Border BorderBrush="#36566A" BorderThickness="1" CornerRadius="18" Padding="26">
        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#15383D"/><GradientStop Color="#22243C" Offset="1"/></LinearGradientBrush></Border.Background>
        <StackPanel>
-        <DockPanel><Border DockPanel.Dock="Right" Background="#233148" CornerRadius="6" Padding="10,6"><TextBlock x:Name="ResourceMode" FontSize="9" Foreground="#99F6E4"/></Border><TextBlock x:Name="ResourceStatus" Foreground="#93A4BA" FontSize="11" VerticalAlignment="Center"/></DockPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,20,0,12"><TextBlock x:Name="ResourceIcon" FontSize="30" Foreground="#5EEAD4" Margin="0,0,14,0"/><TextBlock x:Name="ResourceTitle" FontSize="30" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
-        <TextBlock x:Name="ResourceDescription" FontSize="13" Foreground="#BAC8D9" TextWrapping="Wrap" LineHeight="23"/>
+        <DockPanel>
+         <Border DockPanel.Dock="Right" Background="#233148" CornerRadius="6" Padding="10,6"><TextBlock x:Name="ResourceMode" FontSize="9" Foreground="#99F6E4"/></Border>
+         <Button x:Name="AskAiButton" DockPanel.Dock="Right" Click="AskAiAboutTopic" Margin="0,0,10,0" Padding="10,4" Background="#1D3E42" BorderBrush="#39857E" BorderThickness="1" Foreground="#99F6E4" FontSize="11" FontWeight="SemiBold" Content="🤖  AI Yordamchidan so‘rash"/>
+         <TextBlock x:Name="ResourceStatus" Foreground="#93A4BA" FontSize="11" VerticalAlignment="Center"/>
+        </DockPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,20,0,12"><TextBlock x:Name="ResourceIcon" FontFamily="Segoe MDL2 Assets" FontSize="30" Foreground="#5EEAD4" Margin="0,0,14,0"/><TextBlock x:Name="ResourceTitle" FontSize="30" FontWeight="SemiBold" VerticalAlignment="Center"/></StackPanel>
+        <TextBlock x:Name="ResourceDescription" FontSize="15" Foreground="#BAC8D9" TextWrapping="Wrap" LineHeight="23"/>
        </StackPanel>
       </Border>
       <TextBlock x:Name="SaveStatus" TextWrapping="Wrap" Foreground="#5EEAD4" Margin="0,15,0,12" FontSize="12" AutomationProperties.LiveSetting="Polite"/>
       <StackPanel x:Name="FileArea">
+       <StackPanel x:Name="InlineMedia" Visibility="Collapsed" Margin="0,0,0,18">
+        <DockPanel Margin="0,0,0,10">
+         <Button DockPanel.Dock="Right" Content="⛶  To‘liq ekran" Click="OpenInlineVideoFullscreen"
+                 Background="#214744" Foreground="#99F6E4"/>
+         <ComboBox x:Name="InlineVideoSelection" MinWidth="130" HorizontalAlignment="Left" Padding="9,5"
+                   SelectionChanged="SelectInlineVideo" AutomationProperties.Name="Videoni tanlash"/>
+        </DockPanel>
+        <local:InternalViewer x:Name="InlineViewer" Height="490"/>
+       </StackPanel>
        <TextBlock Text="Mavzu fayllari" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,18"/>
        <Border x:Name="FileEmpty" Background="#131F32" BorderBrush="#30445A" BorderThickness="1" CornerRadius="16" Padding="36"><StackPanel HorizontalAlignment="Center"><TextBlock Text="▤" FontSize="42" Foreground="#5D8597" HorizontalAlignment="Center"/><TextBlock Text="Hali material yuklanmagan" FontSize="22" Margin="0,15,0,8" TextAlignment="Center"/><TextBlock Text="Materiallar tayyor bo‘lgach, shu yerda ko‘rinadi." Foreground="#93A4BA" TextAlignment="Center" TextWrapping="Wrap"/></StackPanel></Border>
-       <ItemsControl x:Name="ResourceFiles"><ItemsControl.ItemTemplate><DataTemplate><Border Background="#152238" BorderBrush="#30445A" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,10"><DockPanel><Button DockPanel.Dock="Right" Content="Ochish →" Tag="{Binding Path}" Click="OpenResourceFile" Background="#214744" Foreground="#99F6E4"/><StackPanel VerticalAlignment="Center"><TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,16,5"/><TextBlock Text="Dastur ichida ko‘rish" Foreground="#93A4BA" FontSize="11"/></StackPanel></DockPanel></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-       <local:InternalViewer x:Name="Viewer" Visibility="Collapsed" Height="580" Margin="0,10,0,0"/>
+       <ItemsControl x:Name="ResourceFiles">
+        <ItemsControl.ItemTemplate>
+         <DataTemplate>
+          <Border Background="#C9152238" BorderBrush="{Binding Accent}" BorderThickness="2,0,0,0"
+                  CornerRadius="13" Padding="18" Margin="0,0,0,12">
+           <Grid>
+            <Grid.ColumnDefinitions>
+             <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Width="56" Height="56" Background="#B80E1828" CornerRadius="12" VerticalAlignment="Top" Margin="0,0,14,0">
+             <TextBlock Text="{Binding Icon}" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="{Binding Accent}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel Grid.Column="1" Margin="0,0,14,0">
+             <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap"/>
+             <WrapPanel Margin="0,6,0,4">
+              <Border Background="#B80E1828" CornerRadius="6" Padding="7,2" Margin="0,0,9,0">
+               <TextBlock Text="{Binding Format}" Foreground="{Binding Accent}" FontSize="12" FontWeight="SemiBold"/>
+              </Border>
+              <TextBlock Text="{Binding SizeLabel}" Foreground="#D1DFEC" FontSize="13" VerticalAlignment="Center"/>
+             </WrapPanel>
+             <TextBlock Text="{Binding Description}" Foreground="#D1DFEC" FontSize="14" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="2" Content="Ochish →" Tag="{Binding Path}" Click="OpenResourceFile"
+                    Background="#214744" Foreground="#99F6E4" VerticalAlignment="Center"/>
+           </Grid>
+          </Border>
+         </DataTemplate>
+        </ItemsControl.ItemTemplate>
+       </ItemsControl>
       </StackPanel>
+      <StackPanel x:Name="MethodPanel" Visibility="Collapsed"/>
       <StackPanel x:Name="TextArea">
-       <TextBlock Text="O‘quv materiali" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,15"/>
+       <TextBlock x:Name="TextAreaTitle" Text="O‘quv materiali" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,15"/>
+       <StackPanel x:Name="GlossaryContainer" Visibility="Collapsed" Margin="0,0,0,16"/>
        <Border x:Name="PreviewArea" Background="#F8FAFC" CornerRadius="12" Padding="28" MinHeight="300"><TextBlock x:Name="PreviewText" TextWrapping="Wrap" Foreground="#172033" FontFamily="Calibri" FontSize="18.667"/></Border>
       </StackPanel>
      </StackPanel>
@@ -174,25 +326,44 @@
       <Button Tag="home" Click="Navigate" Foreground="#5EEAD4" Padding="0,8" Content="←  Bosh sahifaga qaytish" HorizontalAlignment="Left"/>
       <TextBlock x:Name="SectionTitle" FontSize="32" FontWeight="Bold" Margin="0,22,0,12"/>
       <TextBlock x:Name="SectionDescription" FontSize="14" Foreground="#93A4BA" TextWrapping="Wrap" LineHeight="25"/>
-      <Border Margin="0,28,0,0" Background="#152238" CornerRadius="16" BorderBrush="#294359" BorderThickness="1" Padding="28"><StackPanel>
+      <Border x:Name="SectionOverview" Margin="0,28,0,0" Background="#152238" CornerRadius="16" BorderBrush="#294359" BorderThickness="1" Padding="28"><StackPanel>
        <TextBlock x:Name="SectionIcon" Text="▤" Foreground="#5EEAD4" FontSize="36"/>
        <TextBlock x:Name="SectionStatus" Text="Materiallar hali yuklanmagan" FontSize="20" FontWeight="SemiBold" Margin="0,18,0,10"/>
        <TextBlock x:Name="SectionBody" TextWrapping="Wrap" Foreground="#BAC8D9" FontSize="14" LineHeight="26"/>
       </StackPanel></Border>
+      <StackPanel x:Name="SectionContent" Margin="0,18,0,0"/>
      </StackPanel>
     </Grid>
    </ScrollViewer>
-   <Grid x:Name="LectureReader" Grid.Row="1" Visibility="Collapsed" Margin="24,14,24,18">
+  </Grid>
+   <Grid x:Name="LectureReader" Grid.Column="1" Panel.ZIndex="12" Visibility="Collapsed" Margin="24,90,24,18" Background="#0B1220">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-    <Grid Margin="0,0,0,12">
-     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-     <Button Click="ReturnToTopic" Content="←  Mavzuga qaytish" Foreground="#5EEAD4" Padding="0,8,20,8"/>
+    <Grid x:Name="ReaderToolbar" Margin="0,0,0,10">
+     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <Button x:Name="ReaderBack" Click="LeaveReader" Content="←  Mavzu resurslari" Foreground="#5EEAD4" Padding="0,8,20,8"/>
      <TextBlock x:Name="LectureCaption" Grid.Column="1" Text="Ma’ruza" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,18,0"/>
-     <ComboBox x:Name="LectureFiles" Grid.Column="2" DisplayMemberPath="Name" SelectionChanged="SelectLectureFile" MinWidth="180" MaxWidth="330" Padding="8" AutomationProperties.Name="Ma’ruza faylini tanlash"/>
+     <ComboBox x:Name="LectureFiles" Grid.Column="2" DisplayMemberPath="Name" SelectionChanged="SelectLectureFile" MinWidth="180" MaxWidth="330" Padding="8" AutomationProperties.Name="Material faylini tanlash"/>
+     <Button x:Name="ProjectionButton" Grid.Column="3" Click="ToggleProjection" Content="⛶  To‘liq ekran · F11"
+             Margin="10,0,0,0" Background="#214744" Foreground="#99F6E4" Padding="12,8"/>
+     <StackPanel x:Name="LectureZoom" Grid.Column="4" Orientation="Horizontal" Margin="10,0,0,0" Visibility="Collapsed">
+      <Button Content="A−" Click="ChangeLectureZoom" Tag="-" AutomationProperties.Name="Matnni kichraytirish" Padding="10,8"/>
+      <Button x:Name="ZoomReset" Content="100%" Click="ChangeLectureZoom" Tag="reset" AutomationProperties.Name="Asl o‘lchamga qaytarish" Padding="10,8"/>
+      <Button Content="A+" Click="ChangeLectureZoom" Tag="+" AutomationProperties.Name="Matnni kattalashtirish" Padding="10,8"/>
+     </StackPanel>
     </Grid>
     <local:InternalViewer x:Name="LectureViewer" Grid.Row="1"/>
    </Grid>
-  </Grid>
   <local:MediAssistant x:Name="Medi" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,18" Panel.ZIndex="10"/>
+  <Grid x:Name="MediWelcomeArea" Grid.Column="1" Panel.ZIndex="11" Visibility="Collapsed">
+   <Border x:Name="MediWelcome" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
+           Margin="0,0,0,354" Padding="20" Background="#182B40" BorderBrush="#4A8883" BorderThickness="1" CornerRadius="18">
+    <StackPanel>
+     <TextBlock x:Name="MediMessage" Text="Salom! Yangi bilimlarni o‘rganishga tayyormisiz?" TextWrapping="Wrap"
+                FontSize="19" FontWeight="SemiBold" Foreground="#F1F5F9"/>
+     <Button x:Name="MediMessageButton" Click="DismissMediWelcome" Content="Unda boshladik! →" HorizontalAlignment="Left"
+             Foreground="#99F6E4" Background="#214744" Margin="0,10,0,0" Padding="12,8"/>
+    </StackPanel>
+   </Border>
+  </Grid>
  </Grid>
 </Window>

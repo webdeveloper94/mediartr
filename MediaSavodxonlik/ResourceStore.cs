@@ -13,7 +13,7 @@ public sealed class ResourceStore(string root)
     };
     public static bool UsesFiles(string key) => AllowedFiles.ContainsKey(key);
     public static string Extensions(string key) => string.Join(";", AllowedFiles[key].Select(x => "*" + x));
-    private string Folder(int topic, string key)
+    internal string Folder(int topic, string key)
     {
         if (topic is < 1 or > 20 || !new[] { "lecture", "methods", "media", "visuals", "slides", "assessment", "glossary" }.Contains(key))
             throw new ArgumentException("Noto‘g‘ri mavzu yoki resurs.");
@@ -23,6 +23,25 @@ public sealed class ResourceStore(string root)
     {
         string path = Path.Combine(Folder(topic, key), "content.txt");
         return File.Exists(path) ? File.ReadAllText(path) : "";
+    }
+
+    internal string ReadGlossary(int topic)
+    {
+        string path = Path.Combine(Folder(topic, "glossary"), "content.txt");
+        var defaults = TopicPages.Read(topic, "glossary");
+        if (!File.Exists(path)) return defaults;
+
+        var comparer = StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("uz-Latn-UZ"), true);
+        static string Term(string line)
+        {
+            int separator = line.IndexOfAny(['—', '–']);
+            if (separator < 0) separator = line.IndexOf(" - ", StringComparison.Ordinal);
+            if (separator < 0) separator = line.IndexOf(':');
+            return separator > 0 ? line[..separator].Trim() : line;
+        }
+        var entries = File.ReadAllText(path).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Concat(defaults.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        return string.Join("\n", entries.DistinctBy(Term, comparer).OrderBy(Term, comparer));
     }
     public void Save(int topic, string key, string text)
     {
@@ -38,6 +57,14 @@ public sealed class ResourceStore(string root)
         string folder = Folder(topic, key);
         return Directory.Exists(folder) ? Directory.GetFiles(folder).Where(f => AllowedFiles[key].Contains(Path.GetExtension(f).ToLowerInvariant())).OrderBy(Path.GetFileName).ToArray() : [];
     }
+    internal void DeleteFile(int topic, string key, string name)
+    {
+        string? path = Files(topic, key).FirstOrDefault(file =>
+            string.Equals(Path.GetFileName(file), name, StringComparison.OrdinalIgnoreCase));
+        if (path is null) throw new FileNotFoundException("Fayl ushbu mavzu va material turida topilmadi.");
+        File.Delete(path);
+    }
+
     public async Task ImportAsync(int topic, string key, string source)
     {
         if (!AllowedFiles.TryGetValue(key, out var extensions) || !extensions.Contains(Path.GetExtension(source).ToLowerInvariant()))

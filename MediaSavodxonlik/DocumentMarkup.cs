@@ -8,8 +8,11 @@ namespace MediaSavodxonlik;
 public static class DocumentMarkup
 {
     private static string Encode(string text) => WebUtility.HtmlEncode(text);
-    public static string Build(string path)
+    public static string Build(string path) => Build(path, out _);
+
+    internal static string Build(string path, out int slideCount)
     {
+        slideCount = 0;
         string body;
         if (Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase))
         {
@@ -31,7 +34,7 @@ public static class DocumentMarkup
                 using var stream = entry.Open();
                 using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, MaxCharactersInDocument = 4_000_000 });
                 var xml = XDocument.Load(reader);
-                html.Append("<section>");
+                html.Append(slides ? $"<section id='slide-{page + 1}'>" : "<section>");
                 if (slides) html.Append($"<h2>{++page}-slayd</h2>");
                 foreach (var paragraph in xml.Descendants().Where(e => e.Name.LocalName == "p"))
                 {
@@ -65,8 +68,9 @@ public static class DocumentMarkup
                 html.Append("</section>");
                 if (html.Length > 15_000_000) break;
             }
+            slideCount = page;
             body = html.ToString();
         }
-        return "<!doctype html><html lang='uz'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><style>body{margin:0;padding:24px;background:#e9eef4;color:#172033;font:18px Calibri,Segoe UI,sans-serif}section{background:#fff;max-width:950px;margin:0 auto 24px;padding:36px;border-radius:12px}aside{max-width:950px;margin:0 auto 20px;font:13px Segoe UI;color:#42536c}p{line-height:1.55;white-space:pre-wrap}pre{white-space:pre-wrap;font:inherit}img{max-width:100%;max-height:650px;object-fit:contain;display:block;margin:20px auto}h2{color:#167b73}</style>" + body + "</html>";
+        return "<!doctype html><html lang='uz'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><style>body{margin:0;padding:24px;background:#e9eef4;color:#172033;font:18px Calibri,Segoe UI,sans-serif}section{background:#fff;max-width:950px;margin:0 auto 24px;padding:36px;border-radius:12px}body:has(section:target) section:not(:target){display:none}section:target{min-height:calc(100vh - 48px);box-sizing:border-box}aside{max-width:950px;margin:0 auto 20px;font:13px Segoe UI;color:#42536c}p{line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}pre{white-space:pre-wrap;font:inherit;overflow-wrap:anywhere}img{max-width:100%;max-height:650px;object-fit:contain;display:block;margin:20px auto}h2{color:#167b73}</style>" + body + "</html>";
     }
 }

@@ -1,17 +1,27 @@
 <UserControl x:Class="MediaSavodxonlik.InternalViewer" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:wv="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf">
  <Border x:Name="ViewerBorder" Background="#111E30" BorderBrush="#345168" BorderThickness="1" CornerRadius="12" Padding="14">
   <Grid>
-   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
    <DockPanel x:Name="ViewerToolbar" Margin="0,0,0,10"><Button Content="×  Yopish" DockPanel.Dock="Right" Click="CloseViewer" Padding="8,5"/><TextBlock x:Name="FileTitle" Foreground="#F1F5F9" FontSize="15" TextWrapping="Wrap" VerticalAlignment="Center"/></DockPanel>
    <TextBlock x:Name="Status" Grid.Row="1" Foreground="#99F6E4" TextWrapping="Wrap" Margin="0,0,0,8"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
    <Grid Grid.Row="2">
     <wv:WebView2CompositionControl x:Name="Browser" Visibility="Collapsed"/>
-    <ScrollViewer x:Name="ImageArea" Visibility="Collapsed"><Image x:Name="Picture" Stretch="Uniform"/></ScrollViewer>
+    <Grid x:Name="ImageArea" Visibility="Collapsed"><Image x:Name="Picture" Stretch="Uniform"/></Grid>
     <Grid x:Name="VideoArea" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-     <MediaElement x:Name="Player" LoadedBehavior="Manual" UnloadedBehavior="Close" Stretch="Uniform" MediaOpened="VideoOpened" MediaFailed="VideoFailed" MediaEnded="VideoEnded"/>
+     <MediaElement x:Name="Player" LoadedBehavior="Manual" UnloadedBehavior="Close" ScrubbingEnabled="True" Stretch="Uniform" MediaOpened="VideoOpened" MediaFailed="VideoFailed" MediaEnded="VideoEnded"/>
+     <Button x:Name="PosterPlay" Content="▶" Click="PlayVideo" Visibility="Collapsed"
+             Width="90" Height="72" FontSize="32" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+             HorizontalContentAlignment="Center" Background="#F22DD4BF" Foreground="#09272D"
+             AutomationProperties.Name="Videoni ijro etish"/>
      <StackPanel Grid.Row="1" Margin="0,12,0,0"><Slider x:Name="Seek" Minimum="0" Maximum="1" PreviewMouseLeftButtonDown="StartSeek" PreviewMouseLeftButtonUp="EndSeek"/><DockPanel><TextBlock x:Name="PositionLabel" DockPanel.Dock="Right" Foreground="#93A4BA" VerticalAlignment="Center"/><Button Content="▶ O‘ynatish" Click="PlayVideo" HorizontalAlignment="Left"/><Button Content="Ⅱ Pauza" Click="PauseVideo" HorizontalAlignment="Left"/></DockPanel></StackPanel>
     </Grid>
    </Grid>
+   <StackPanel x:Name="SlideNavigation" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center"
+               Margin="0,5" Visibility="Collapsed">
+    <Button x:Name="PreviousSlide" Content="←  Oldingi" Click="GoToPreviousSlide" Background="#214744" Padding="14,8"/>
+    <TextBlock x:Name="SlidePosition" Foreground="#F1F5F9" VerticalAlignment="Center" Margin="16,0"/>
+    <Button x:Name="NextSlide" Content="Keyingi  →" Click="GoToNextSlide" Background="#214744" Padding="14,8"/>
+   </StackPanel>
   </Grid>
  </Border>
 </UserControl>

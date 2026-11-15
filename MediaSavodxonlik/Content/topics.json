@@ -1,142 +1,82 @@
 [
   {
     "Number": 1,
-    "Name": "Kompyuterlar tarixi",
-    "Title": "Kompyuterlar tarixi",
-    "Label": "MAVZU 01",
-    "Subtitle": "1-mavzu \u00B7 Media va axborot savodxonligi"
+    "Name": "Media va axborot savodxonligi asoslari"
   },
   {
     "Number": 2,
-    "Name": "",
-    "Title": "2-mavzu",
-    "Label": "MAVZU 02",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "An’anaviy, raqamli va ijtimoiy media turlari"
   },
   {
     "Number": 3,
-    "Name": "",
-    "Title": "3-mavzu",
-    "Label": "MAVZU 03",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Media namunalarini turi va vazifasiga ko‘ra tasniflash"
   },
   {
     "Number": 4,
-    "Name": "",
-    "Title": "4-mavzu",
-    "Label": "MAVZU 04",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Axborot manbalari va qidiruv strategiyalari"
   },
   {
     "Number": 5,
-    "Name": "",
-    "Title": "5-mavzu",
-    "Label": "MAVZU 05",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Axborotni saralash va manbani baholash mezonlari"
   },
   {
     "Number": 6,
-    "Name": "",
-    "Title": "6-mavzu",
-    "Label": "MAVZU 06",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Kalit so‘z va filtrlar yordamida axborot izlash"
   },
   {
     "Number": 7,
-    "Name": "",
-    "Title": "7-mavzu",
-    "Label": "MAVZU 07",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Bir nechta manbani taqqoslash va vazifaga mosini tanlash"
   },
   {
     "Number": 8,
-    "Name": "",
-    "Title": "8-mavzu",
-    "Label": "MAVZU 08",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Media xabarining muallifi, maqsadi va auditoriyasi"
   },
   {
     "Number": 9,
-    "Name": "",
-    "Title": "9-mavzu",
-    "Label": "MAVZU 09",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Feyk xabar, dezinformatsiya va manipulyatsiya belgilari"
   },
   {
     "Number": 10,
-    "Name": "",
-    "Title": "10-mavzu",
-    "Label": "MAVZU 10",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Xabarni asl manba, sana va mustaqil dalillar orqali tekshirish"
   },
   {
     "Number": 11,
-    "Name": "",
-    "Title": "11-mavzu",
-    "Label": "MAVZU 11",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Post, reklama yoki videoni tanqidiy tahlil qilish"
   },
   {
     "Number": 12,
-    "Name": "",
-    "Title": "12-mavzu",
-    "Label": "MAVZU 12",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Media mahsulotini rejalash va ssenariy tuzish"
   },
   {
     "Number": 13,
-    "Name": "",
-    "Title": "13-mavzu",
-    "Label": "MAVZU 13",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Matn, tasvir va videoni auditoriyaga mos taqdim etish"
   },
   {
     "Number": 14,
-    "Name": "",
-    "Title": "14-mavzu",
-    "Label": "MAVZU 14",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Matnli va tasvirli kontent yoki infografika yaratish"
   },
   {
     "Number": 15,
-    "Name": "",
-    "Title": "15-mavzu",
-    "Label": "MAVZU 15",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Qisqa videoxabar tayyorlash va taqdim etish"
   },
   {
     "Number": 16,
-    "Name": "",
-    "Title": "16-mavzu",
-    "Label": "MAVZU 16",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Media etikasi va netiket"
   },
   {
     "Number": 17,
-    "Name": "",
-    "Title": "17-mavzu",
-    "Label": "MAVZU 17",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Mualliflik huquqi, plagiat va manba ko‘rsatish"
   },
   {
     "Number": 18,
-    "Name": "",
-    "Title": "18-mavzu",
-    "Label": "MAVZU 18",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Shaxsiy ma’lumotlar, raqamli gigiyena va kiberbulling"
   },
   {
     "Number": 19,
-    "Name": "",
-    "Title": "19-mavzu",
-    "Label": "MAVZU 19",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Media mahsulotiga iqtibos va manba havolalarini to‘g‘ri kiritish"
   },
   {
     "Number": 20,
-    "Name": "",
-    "Title": "20-mavzu",
-    "Label": "MAVZU 20",
-    "Subtitle": "Mavzu nomi hali kiritilmagan"
+    "Name": "Maxfiylik va onlayn muloqotga oid vaziyatlarni yechish"
   }
 ]

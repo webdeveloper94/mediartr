@@ -12,6 +12,12 @@ public partial class MediAssistant : UserControl
     private int step = -1;
     private int? chatTopic;
     public Func<int, string>? ContextProvider { get => Chat.ContextProvider; set => Chat.ContextProvider = value; }
+    public void Open()
+    {
+        Bubble.Visibility = Visibility.Collapsed;
+        Chat.Visibility = Visibility.Visible;
+    }
+
     public void SetTopic(int? number)
     {
         chatTopic = number;
@@ -40,6 +46,8 @@ public partial class MediAssistant : UserControl
     }
 
     public void ResizeChat() => Chat.MaxHeight = Math.Max(240, (Window.GetWindow(this)?.ActualHeight ?? 920) - 205);
+
+    internal void CloseWelcomeBubble() => Dismiss(this, new RoutedEventArgs());
 
     public void SetMotion(bool enabled)
     {

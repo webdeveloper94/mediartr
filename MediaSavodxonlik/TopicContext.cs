@@ -21,7 +21,7 @@ public static class TopicContext
         result.AppendLine($"Mavzu nomi: {namedTopic.Title}");
         foreach (string key in new[] { "methods", "visuals", "assessment", "glossary" })
         {
-            string text = TopicPages.Read(topic, key);
+            string text = key == "glossary" ? store.ReadGlossary(topic) : TopicPages.Read(topic, key);
             if (!string.IsNullOrWhiteSpace(text)) result.AppendLine($"[{key}]\n{text[..Math.Min(text.Length, 3500)]}");
         }
         foreach (string key in new[] { "lecture", "slides" })

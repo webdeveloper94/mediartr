@@ -10,15 +10,63 @@ public partial class InternalViewer : UserControl
 {
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private bool seeking;
+    private bool previewingVideo;
     private int revision;
     private string allowedUri = "";
     private Task? browserInit;
     private string? temporaryPreview;
+    private string[] slides = [];
+    private string? slideFolder;
+    private int slideNumber;
+    public bool IsPdf { get; private set; }
+    public double DocumentZoom => Browser.ZoomFactor;
+    public void SetDocumentZoom(double zoom) => Browser.ZoomFactor = zoom;
+
+    internal bool MoveSlide(int delta)
+    {
+        if (slides.Length == 0) return false;
+
+        int next = Math.Clamp(slideNumber + delta, 1, slides.Length);
+        if (next != slideNumber) OpenSlide(next);
+        return true;
+    }
+
+    private void OpenSlide(int number)
+    {
+        slideNumber = number;
+        Picture.Source = LoadPicture(slides[number - 1]);
+        SlideNavigation.Visibility = Visibility.Visible;
+        SlidePosition.Text = $"{number} / {slides.Length}";
+        PreviousSlide.IsEnabled = number > 1;
+        NextSlide.IsEnabled = number < slides.Length;
+    }
+    private void GoToPreviousSlide(object sender, RoutedEventArgs e) => MoveSlide(-1);
+    private void GoToNextSlide(object sender, RoutedEventArgs e) => MoveSlide(1);
+
+    private static BitmapImage LoadPicture(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    private static void DeleteSlides(string folder)
+    {
+        try { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
     public void UseReadingLayout()
     {
         ViewerToolbar.Visibility = Visibility.Collapsed;
         ViewerBorder.Padding = new Thickness(0);
         ViewerBorder.BorderThickness = new Thickness(0);
+        ViewerBorder.Background = System.Windows.Media.Brushes.Black;
     }
     public InternalViewer()
     {
@@ -29,6 +77,20 @@ public partial class InternalViewer : UserControl
     public void Reset()
     {
         revision++; timer.Stop(); Player.Stop(); Player.Source = null; Picture.Source = null;
+        previewingVideo = seeking = false;
+        PosterPlay.Visibility = Visibility.Collapsed;
+        Seek.Value = 0;
+        PositionLabel.Text = "";
+        slides = [];
+        slideNumber = 0;
+        SlideNavigation.Visibility = Visibility.Collapsed;
+        if (slideFolder is not null)
+        {
+            DeleteSlides(slideFolder);
+            slideFolder = null;
+        }
+        IsPdf = false;
+        SetDocumentZoom(1);
         if (Browser.CoreWebView2 is not null) Browser.CoreWebView2.Navigate("about:blank");
         if (temporaryPreview is not null)
         {
@@ -69,7 +131,7 @@ public partial class InternalViewer : UserControl
         try { core.Navigate(uri); await completion.Task.WaitAsync(TimeSpan.FromSeconds(20)); }
         finally { core.NavigationStarting -= Starting; core.NavigationCompleted -= Completed; }
     }
-    public async Task OpenAsync(string path)
+    public async Task OpenAsync(string path, bool previewVideo = false)
     {
         Reset(); int version = revision;
         Visibility = Visibility.Visible; FileTitle.Text = Path.GetFileName(path); Status.Text = "Material ochilmoqda…";
@@ -77,17 +139,49 @@ public partial class InternalViewer : UserControl
         {
             if (!File.Exists(path)) throw new FileNotFoundException("Material topilmadi.");
             string extension = Path.GetExtension(path).ToLowerInvariant();
+            IsPdf = extension == ".pdf";
             if (extension is ".mp4" or ".wmv" or ".avi" or ".mov" or ".mp3" or ".wav")
             {
-                VideoArea.Visibility = Visibility.Visible; Player.Source = new Uri(path); Player.Play(); Status.Text = ""; return;
+                previewingVideo = previewVideo && extension is ".mp4" or ".wmv" or ".avi" or ".mov";
+                VideoArea.Visibility = Visibility.Visible;
+                Player.Source = new Uri(path);
+                if (previewingVideo)
+                {
+                    PosterPlay.Visibility = Visibility.Visible;
+                    Player.Pause();
+                }
+                else Player.Play();
+                Status.Text = "";
+                return;
             }
             if (extension is ".jpg" or ".jpeg" or ".png" or ".gif")
             {
-                using var stream = File.OpenRead(path);
-                var bitmap = new BitmapImage(); bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.StreamSource = stream; bitmap.EndInit(); bitmap.Freeze();
-                Picture.Source = bitmap; ImageArea.Visibility = Visibility.Visible; Status.Text = extension == ".gif" ? "GIF: birinchi kadr ko‘rsatiladi." : ""; return;
+                Picture.Source = LoadPicture(path);
+                ImageArea.Visibility = Visibility.Visible;
+                Status.Text = extension == ".gif" ? "GIF: birinchi kadr ko‘rsatiladi." : "";
+                return;
             }
-            string? html = extension is ".docx" or ".pptx" or ".txt" ? await Task.Run(() => DocumentMarkup.Build(path)) : null;
+            if (extension == ".pptx")
+            {
+                string folder = Path.Combine(Path.GetTempPath(), "MediaLabSlides", Guid.NewGuid().ToString("N"));
+                try
+                {
+                    var images = await PowerPointSlides.ExportAsync(path, folder);
+                    if (version != revision) return;
+                    if (images.Length == 0) throw new InvalidDataException("Taqdimotda slayd yo‘q.");
+                    slides = images;
+                    OpenSlide(1);
+                    slideFolder = folder;
+                    ImageArea.Visibility = Visibility.Visible;
+                    Status.Text = "";
+                }
+                finally
+                {
+                    if (slideFolder != folder) DeleteSlides(folder);
+                }
+                return;
+            }
+            string? html = extension is ".docx" or ".txt" ? await Task.Run(() => DocumentMarkup.Build(path)) : null;
             if (version != revision) return;
             if (html is null && extension != ".pdf") throw new InvalidDataException("Bu format ichki ko‘ruvchida qo‘llanmaydi. PDF formatini yuklang.");
             Browser.Visibility = Visibility.Visible;
@@ -108,13 +202,39 @@ public partial class InternalViewer : UserControl
             if (version == revision) Status.Text = "";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Runtime.InteropServices.COMException or System.Xml.XmlException or ArgumentException or NotSupportedException or WebView2RuntimeNotFoundException or System.ComponentModel.Win32Exception or TimeoutException)
-        { if (version == revision) Status.Text = "Material ochilmadi: " + ex.Message + " PDF uchun Microsoft Edge WebView2 Runtime mavjudligini tekshiring."; }
+        {
+            if (version == revision) Status.Text = "Material ochilmadi: " + ex.Message
+                + (Path.GetExtension(path).Equals(".pptx", StringComparison.OrdinalIgnoreCase)
+                    ? " PowerPoint dasturida fayl ochilishini tekshiring yoki taqdimotni PDF sifatida yuklang."
+                    : "");
+        }
     }
     private void CloseViewer(object sender, RoutedEventArgs e) => Reset();
-    private void VideoOpened(object sender, RoutedEventArgs e) { if (Player.NaturalDuration.HasTimeSpan) Seek.Maximum = Player.NaturalDuration.TimeSpan.TotalSeconds; timer.Start(); }
-    private void VideoFailed(object sender, ExceptionRoutedEventArgs e) { timer.Stop(); Status.Text = "Videoni ijro etib bo‘lmadi. MP4 (H.264/AAC) formatida qayta yuklang."; }
+    private void VideoOpened(object sender, RoutedEventArgs e)
+    {
+        if (Player.NaturalDuration.HasTimeSpan)
+        {
+            var duration = Player.NaturalDuration.TimeSpan;
+            Seek.Maximum = duration.TotalSeconds;
+            if (previewingVideo) Player.Position = TimeSpan.FromSeconds(Math.Min(3, duration.TotalSeconds * 0.12));
+        }
+        if (!previewingVideo) timer.Start();
+    }
+    private void VideoFailed(object sender, ExceptionRoutedEventArgs e)
+    {
+        timer.Stop();
+        PosterPlay.Visibility = Visibility.Collapsed;
+        Status.Text = "Videoni ijro etib bo‘lmadi. MP4 (H.264/AAC) formatida qayta yuklang.";
+    }
     private void VideoEnded(object sender, RoutedEventArgs e) { Player.Pause(); timer.Stop(); }
-    private void PlayVideo(object sender, RoutedEventArgs e) { Player.Play(); timer.Start(); }
+    private void PlayVideo(object sender, RoutedEventArgs e)
+    {
+        if (previewingVideo) Player.Position = TimeSpan.Zero;
+        previewingVideo = false;
+        PosterPlay.Visibility = Visibility.Collapsed;
+        Player.Play();
+        timer.Start();
+    }
     private void PauseVideo(object sender, RoutedEventArgs e) => Player.Pause();
     private void StartSeek(object sender, MouseButtonEventArgs e) => seeking = true;
     private void EndSeek(object sender, MouseButtonEventArgs e) { Player.Position = TimeSpan.FromSeconds(Seek.Value); seeking = false; }

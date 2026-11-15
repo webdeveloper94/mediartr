@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.IO;
 using System.Windows.Input;
+using System.Windows.Threading;
 using System.Text.Json;
 
 namespace MediaSavodxonlik;
@@ -11,35 +12,74 @@ namespace MediaSavodxonlik;
 public partial class MainWindow : Window
 {
     private List<TopicEntry> allTopics = [];
+    private readonly HashSet<int> viewedTopics = [];
     private readonly TopicCatalog catalog;
     private bool adminOpen;
-    private sealed record TopicResource(string Key, string Title, string Icon, string Color, string Description)
-    {
-        public string ModeLabel => ResourceStore.UsesFiles(Key) ? "Fayl resursi · ichki ko‘ruvchi" : "O‘quv sahifasi · o‘qish uchun";
-    }
+    private List<ResourceFile> inlineVideos = [];
+    private string topicList = "topics";
+    private sealed record TopicResource(string Key, string Title, string Icon, string Color, string Surface, string Description);
     private readonly List<TopicResource> resources = new()
     {
-        new("lecture", "Ma’ruza matni", "▤", "#5EEAD4", "Nazariy va amaliy mashg‘ulotlar uchun o‘quv materiallari."),
-        new("methods", "O‘qitish metodlari", "⌘", "#F4C67A", "Mashg‘ulot metodlari, ularning maqsadi va qo‘llanish tartibi."),
-        new("media", "Media materiallar", "▷", "#7DD3FC", "Mavzuga oid video, audio va animatsiya materiallari."),
-        new("visuals", "Ko‘rgazmali materiallar", "◈", "#FDBA74", "Didaktik vositalar, ko‘rgazmali misollar va izohlar."),
-        new("slides", "Taqdimot", "▣", "#C4B5FD", "Mavzuga oid slaydlar va ko‘rgazmali taqdimot materiallari shu yerda ko‘rsatiladi."),
-        new("assessment", "Baholash materiallari", "✓", "#FDA4AF", "Nazorat savollari, amaliy topshiriqlar va testlar."),
-        new("glossary", "Glossariy", "Aa", "#A5B4FC", "Mavzuga oid atamalar va ularning tushunarli izohlari.")
+        new("lecture", "Ma’ruza matni", "\uE8A5", "#5EEAD4", "#20484A", "Nazariy va amaliy mashg‘ulotlar uchun o‘quv materiallari."),
+        new("methods", "O‘qitish metodlari", "\uE8FD", "#F4C67A", "#4B4028", "Mashg‘ulot metodlari, ularning maqsadi va qo‘llanish tartibi."),
+        new("media", "Media materiallar", "\uE768", "#7DD3FC", "#214458", "Mavzuga oid video, audio va animatsiya materiallari."),
+        new("visuals", "Ko‘rgazmali materiallar", "\uEB9F", "#FB923C", "#50352F", "Didaktik vositalar, ko‘rgazmali misollar va izohlar."),
+        new("slides", "Taqdimot", "\uE7F4", "#C4B5FD", "#433360", "Mavzuga oid slaydlar va ko‘rgazmali taqdimot materiallari shu yerda ko‘rsatiladi."),
+        new("assessment", "Baholash materiallari", "\uE9D5", "#FDA4AF", "#503348", "Nazorat savollari, amaliy topshiriqlar va testlar."),
+        new("glossary", "Glossariy", "\uE82D", "#86EFAC", "#284737", "Mavzuga oid atamalar va ularning tushunarli izohlari.")
     };
     private int currentTopic;
     private string currentResource = "";
+    private (WindowStyle Style, ResizeMode Resize, WindowState State)? projectionWindow;
     private readonly ResourceStore store;
-    private sealed record ResourceFile(string Path) { public string Name => System.IO.Path.GetFileName(Path); }
+    private sealed record ResourceFile(string Path)
+    {
+        public string Name => System.IO.Path.GetFileName(Path);
+        public string Format => System.IO.Path.GetExtension(Path).TrimStart('.').ToUpperInvariant();
+
+        private (string Icon, string Accent, string Description) Appearance => Format switch
+        {
+            "PDF" => ("\uEA90", "#FDA4AF", "Sahifalangan hujjat"),
+            "PPTX" => ("\uE7F4", "#C4B5FD", "Slaydli taqdimot"),
+            "DOCX" => ("\uE8A5", "#93C5FD", "Word matnli hujjati"),
+            "MP4" or "WMV" or "AVI" or "MOV" => ("\uE714", "#5EEAD4", "Ichki pleyerda ijro etiladigan video"),
+            "MP3" or "WAV" => ("\uE8D6", "#FCD34D", "Ichki pleyerda tinglanadigan audio"),
+            "JPG" or "JPEG" or "PNG" or "GIF" => ("\uEB9F", "#86EFAC", "Ko‘rgazmali tasvir"),
+            _ => ("\uE8A5", "#CBD5E1", "Matnli material")
+        };
+        public string Icon => Appearance.Icon;
+        public string Accent => Appearance.Accent;
+        public string Description => Appearance.Description;
+
+        public string SizeLabel
+        {
+            get
+            {
+                try
+                {
+                    long bytes = new FileInfo(Path).Length;
+                    return bytes switch
+                    {
+                        >= 1L << 30 => $"{bytes / 1073741824d:0.#} GB",
+                        >= 1L << 20 => $"{bytes / 1048576d:0.#} MB",
+                        >= 1L << 10 => $"{bytes / 1024d:0.#} KB",
+                        _ => $"{bytes} bayt"
+                    };
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    return "Hajmi aniqlanmadi";
+                }
+            }
+        }
+    }
     private bool motionEnabled = SystemParameters.ClientAreaAnimation;
+    private readonly DispatcherTimer welcomeTimer = new() { Interval = TimeSpan.FromSeconds(4) };
+    private bool welcomeShown;
+    private bool welcomeDocking;
     private readonly Dictionary<string, (string Title, string Description, string Body)> sections = new()
     {
-        ["theory"] = ("Nazariy mashg‘ulotlar", "24 soat · Media va axborot savodxonligi bo‘yicha nazariy ta’lim.", "Bu bo‘limga tasdiqlangan mavzular ro‘yxati, ma’ruza matnlari, o‘qitish natijalari va tegishli taqdimotlar joylashtiriladi. Hozircha o‘quv materiallari kiritilmagan."),
-        ["practice"] = ("Amaliy mashg‘ulotlar", "16 soat · Bilimni amalda qo‘llash va mustaqil tahlil.", "Bu bo‘lim amaliy ish yo‘riqnomalari, vaziyatli topshiriqlar va baholash mezonlari uchun tayyorlanmoqda. Topshiriqlar tasdiqlangan modul dasturi asosida kiritiladi."),
-        ["media"] = ("Media kutubxona", "Ko‘ring, tinglang va tahlil qiling.", "Mavzularga mos video, audio, animatsiya va ko‘rgazmali materiallar shu yerda jamlanadi. Hozircha media materiallar yuklanmagan."),
-        ["tests"] = ("Bilimni sinash", "O‘rganilgan bilimlarni mustahkamlash uchun baholash maydoni.", "Nazorat savollari, testlar va mustaqil topshiriqlar modul mazmuni bilan birga kiritiladi. Hozircha testlar mavjud emas va baholash boshlanmagan."),
-        ["glossary"] = ("Glossariy", "Media va axborot olamining asosiy atamalari.", "Modulga oid atamalar va ularning izohlari shu bo‘limga kiritiladi. Atamalar ro‘yxati hozircha yuklanmagan."),
-        ["about"] = ("Modul haqida", "30610403 — Kompyuter tarmoqlari va IT-servis", "Fan: Media va axborot savodxonligi.\n\nJami o‘quv yuklamasi: 40 soat.\nNazariy mashg‘ulotlar: 24 soat.\nAmaliy mashg‘ulotlar: 16 soat.\n\nResurs tarkibi: mavzular, ma’ruzalar, o‘qitish metodlari, media, ko‘rgazmali materiallar, taqdimotlar, baholash topshiriqlari va glossariy.\n\nMavzular, yettita resurs, ichki hujjat ko‘ruvchi, media pleyer va Medi yordamchisi mavjud. Baholash materiallari o‘qish uchun taqdim etiladi.")
+        ["about"] = ("Modul haqida", "30610403 — Kompyuter tarmoqlari va IT-servis", "Fan: Media va axborot savodxonligi.\n\nUKM.4 modulining umumiy yuklamasi 54 soat.\nMediaLab qamrovi 40 soat auditoriya mashg‘uloti (2 soatlik 20 ta mavzu).\nNazariy mashg‘ulotlar 22 soat.\nAmaliy mashg‘ulotlar 18 soat.\nO‘quv rejada mustaqil ta’limga 14 soat ajratilgan.\n\nMustaqil ta’lim bo‘limida 14 ta bir soatlik ish mavjud.\n\nResurs tarkibi: mavzular, ma’ruzalar, o‘qitish metodlari, media, ko‘rgazmali materiallar, taqdimotlar, baholash topshiriqlari va glossariy.\n\nMavzular, yettita resurs, ichki hujjat ko‘ruvchi, media pleyer va Medi yordamchisi mavjud. Baholash materiallari o‘qish uchun taqdim etiladi.")
     };
 
     public MainWindow() : this(ContentPaths.Root) { }
@@ -50,6 +90,8 @@ public partial class MainWindow : Window
         catalog = new TopicCatalog(dataRoot);
         InitializeComponent();
         LectureViewer.UseReadingLayout();
+        InlineViewer.UseReadingLayout();
+        PreviewKeyDown += HandleProjectionKey;
         try { allTopics = catalog.Load(); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         { allTopics = Enumerable.Range(1, 20).Select(n => new TopicEntry(n, "")).ToList(); Loaded += (_, _) => MessageBox.Show(this, "Mavzular ro‘yxati o‘qilmadi: " + ex.Message); }
@@ -59,9 +101,90 @@ public partial class MainWindow : Window
         Medi.ContextProvider = number => TopicContext.Build(store, number);
         SizeChanged += (_, _) => Medi.ResizeChat();
         Loaded += (_, _) => { UpdateMotion(); AnimateEntrance(HomePanel); };
+        ContentRendered += (_, _) => ShowMediWelcome();
+        welcomeTimer.Tick += (_, _) => DismissMediWelcome(this, new RoutedEventArgs());
+        SizeChanged += (_, _) =>
+        {
+            if (welcomeDocking) FinishMediWelcome();
+            else if (MediWelcomeArea.Visibility == Visibility.Visible) CenterMedi();
+        };
         CommandBindings.Add(new CommandBinding(OpenAdminCommand, OpenAdmin));
         InputBindings.Add(new KeyBinding(OpenAdminCommand, Key.A, ModifierKeys.Control | ModifierKeys.Shift));
-        Closing += (_, _) => { Viewer.Reset(); LectureViewer.Reset(); };
+        Closing += (_, _) => { FinishMediWelcome(); LectureViewer.Reset(); InlineViewer.Reset(); };
+    }
+
+    private void ShowMediWelcome()
+    {
+        if (welcomeShown) return;
+        welcomeShown = true;
+        ShowMediMessage("Salom! Yangi bilimlarni o‘rganishga tayyormisiz?", "Unda boshladik! →", autoDismiss: true);
+    }
+
+    private void ShowMediMessage(string message, string button, bool autoDismiss = false)
+    {
+        FinishMediWelcome();
+        Medi.CloseWelcomeBubble();
+        MediMessage.Text = message;
+        MediMessageButton.Content = button;
+        MediWelcomeArea.Visibility = Visibility.Visible;
+        UpdateLayout();
+        CenterMedi();
+        Medi.IsHitTestVisible = false;
+        MediMessageButton.Focus();
+        if (motionEnabled)
+        {
+            Medi.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220)) { FillBehavior = FillBehavior.Stop });
+            MediWelcome.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220)) { FillBehavior = FillBehavior.Stop });
+        }
+        if (autoDismiss) welcomeTimer.Start();
+    }
+
+    private void CenterMedi()
+    {
+        Medi.RenderTransform = Transform.Identity;
+        Point dockCenter = Medi.TranslatePoint(new Point(Medi.ActualWidth / 2, Medi.ActualHeight / 2), MediWelcomeArea);
+        var scale = new ScaleTransform(1.65, 1.65);
+        var offset = new TranslateTransform(MediWelcomeArea.ActualWidth / 2 - dockCenter.X,
+            MediWelcomeArea.ActualHeight / 2 - dockCenter.Y);
+        Medi.RenderTransformOrigin = new Point(.5, .5);
+        Medi.RenderTransform = new TransformGroup { Children = { scale, offset } };
+    }
+
+    private void DismissMediWelcome(object sender, RoutedEventArgs e)
+    {
+        if (MediWelcomeArea.Visibility != Visibility.Visible) return;
+        welcomeTimer.Stop();
+        if (!motionEnabled)
+        {
+            FinishMediWelcome();
+            return;
+        }
+        MediWelcomeArea.Visibility = Visibility.Collapsed;
+        welcomeDocking = true;
+        var transform = (TransformGroup)Medi.RenderTransform;
+        var scale = (ScaleTransform)transform.Children[0];
+        var offset = (TranslateTransform)transform.Children[1];
+        DoubleAnimation DockTo(double target) => new(target, TimeSpan.FromMilliseconds(520))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, DockTo(1));
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, DockTo(1));
+        offset.BeginAnimation(TranslateTransform.XProperty, DockTo(0));
+        var vertical = DockTo(0);
+        vertical.Completed += (_, _) => FinishMediWelcome();
+        offset.BeginAnimation(TranslateTransform.YProperty, vertical);
+    }
+
+    private void FinishMediWelcome()
+    {
+        welcomeTimer.Stop();
+        welcomeDocking = false;
+        MediWelcomeArea.Visibility = Visibility.Collapsed;
+        MediWelcome.BeginAnimation(OpacityProperty, null);
+        Medi.BeginAnimation(OpacityProperty, null);
+        Medi.RenderTransform = Transform.Identity;
+        Medi.IsHitTestVisible = true;
     }
 
     private bool NavigateGuide(int step)
@@ -77,17 +200,25 @@ public partial class MainWindow : Window
     private void Navigate(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string key }) return;
-        ShowPage(key);
+        if (key == "author") ShowAuthor();
+        else ShowPage(key);
     }
 
     private bool ShowPage(string key)
     {
-        Viewer.Reset();
+        if (MediWelcomeArea.Visibility == Visibility.Visible || welcomeDocking) FinishMediWelcome();
+        ExitProjection();
         LectureViewer.Reset();
+        InlineViewer.Reset();
+        InlineMedia.Visibility = Visibility.Collapsed;
+        InlineVideoSelection.ItemsSource = null;
+        inlineVideos.Clear();
         LectureReader.Visibility = Visibility.Collapsed;
+        LectureFiles.SelectedIndex = -1;
+        LectureFiles.ItemsSource = null;
         PageScroll.Visibility = Visibility.Visible;
         bool home = key == "home";
-        bool topics = key == "topics";
+        bool topics = key is "topics" or "theory" or "practice";
         bool topic = key == "topic";
         bool resourcePage = key == "resource";
         if (!topic && !resourcePage) Medi.SetTopic(null);
@@ -98,8 +229,29 @@ public partial class MainWindow : Window
         SectionPanel.Visibility = home || topics || topic || resourcePage ? Visibility.Collapsed : Visibility.Visible;
         TopicsBackButton.Visibility = Visibility.Collapsed;
         HomeNav.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(home ? "#17363C" : "#0E1828"));
+        UpdateNavSelection(key);
+        if (SectionPanel.Visibility == Visibility.Visible)
+        {
+            SectionContent.Children.Clear();
+            SectionOverview.Visibility = key == "about" ? Visibility.Visible : Visibility.Collapsed;
+        }
         if (home) Breadcrumb.Text = "O‘quv maydoni   /   Bosh sahifa";
-        else if (topics) Breadcrumb.Text = "O‘quv maydoni   /   Mavzular";
+        else if (topics)
+        {
+            if (topicList != key) TopicSearch.Clear();
+            topicList = key;
+            TopicsHeading.Text = key switch
+            {
+                "theory" => "Nazariy mashg‘ulotlar",
+                "practice" => "Amaliy mashg‘ulotlar",
+                _ => "Mavzular"
+            };
+            TopicsSummary.Text = key == "topics"
+                ? "11 ta nazariy va 9 ta amaliy mashg‘ulot"
+                : "Har bir mashg‘ulot 2 soat";
+            RefreshTopics();
+            Breadcrumb.Text = "O‘quv maydoni   /   " + TopicsHeading.Text;
+        }
         else if (sections.TryGetValue(key, out var section))
         {
             SectionTitle.Text = section.Title;
@@ -109,6 +261,7 @@ public partial class MainWindow : Window
             SectionIcon.Text = key == "about" ? "ⓘ" : "▤";
             Breadcrumb.Text = "O‘quv maydoni   /   " + section.Title;
         }
+        else if (SectionPanel.Visibility == Visibility.Visible) BuildCourseSection(key);
         // Reset the shared scroll container when switching sections.
         if (HomePanel.Parent is DependencyObject container)
         {
@@ -120,6 +273,30 @@ public partial class MainWindow : Window
         return true;
     }
 
+    private void CheckFact(object sender, RoutedEventArgs e)
+    {
+        bool correct = sender is Button { Tag: "source" };
+        FactFeedback.Text = correct
+            ? "To‘g‘ri. Ta’lim muassasasining rasmiy kanalini oching va e’lon sanasini tekshiring."
+            : "Ko‘p ulashilgan xabar ham tasdiqlanmagan bo‘lishi mumkin. Avval rasmiy e’lonni qidiring.";
+        FactResult.Visibility = Visibility.Visible;
+        FactResult.BeginAnimation(OpacityProperty, motionEnabled
+            ? new DoubleAnimation(0.35, 1, TimeSpan.FromMilliseconds(180)) { FillBehavior = FillBehavior.Stop }
+            : null);
+        (System.Windows.Automation.Peers.UIElementAutomationPeer.FromElement(FactFeedback)
+            ?? System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(FactFeedback))
+            ?.RaiseAutomationEvent(System.Windows.Automation.Peers.AutomationEvents.LiveRegionChanged);
+    }
+
+    private void OpenFactTopic(object sender, RoutedEventArgs e)
+    {
+        topicList = "practice";
+        TopicSearch.Clear();
+        DisplayTopic(10);
+    }
+
+    private void ReturnToTopicList(object sender, RoutedEventArgs e) => ShowPage(topicList);
+
     private void OpenTopic(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: int number }) return;
@@ -130,14 +307,17 @@ public partial class MainWindow : Window
     {
         if (!ShowPage("topic")) return false;
         currentTopic = Math.Clamp(number, 1, 20);
+        TopicIndependent.Visibility = CourseActivities.Independent.Any(work => work.Topic == currentTopic)
+            ? Visibility.Visible : Visibility.Collapsed;
         Medi.SetTopic(currentTopic);
         TopicTitle.Text = allTopics[currentTopic - 1].Title;
-        TopicDescription.Text = allTopics[currentTopic - 1].Subtitle;
+        TopicDescription.Text = allTopics[currentTopic - 1].Schedule;
         TopicEyebrow.Text = $"MEDIA VA AXBOROT SAVODXONLIGI  /  MAVZU {currentTopic:00}";
         TopicNumber.Text = $"{currentTopic:00}";
         PreviousTopic.IsEnabled = currentTopic > 1;
         NextTopic.IsEnabled = currentTopic < 20;
         Breadcrumb.Text = $"O‘quv maydoni   /   Mavzular   /   {currentTopic}-mavzu";
+        RecordTopicView(currentTopic);
         return true;
     }
 
@@ -150,8 +330,6 @@ public partial class MainWindow : Window
     {
         if (sender is Button { Tag: string key }) SelectResource(key);
     }
-
-    private void ResourceFocusLost(object sender, RoutedEventArgs e) => SetTopicHover(sender, false);
 
     private bool SelectResource(string key)
     {
@@ -166,25 +344,38 @@ public partial class MainWindow : Window
         Breadcrumb.Text = $"O‘quv maydoni / {currentTopic}-mavzu / {resource.Title}";
         ResourceMode.Text = ResourceStore.UsesFiles(key) ? "FAYL RESURSI" : "SAHIFA KONTENTI";
         FileArea.Visibility = ResourceStore.UsesFiles(key) ? Visibility.Visible : Visibility.Collapsed;
-        TextArea.Visibility = ResourceStore.UsesFiles(key) ? Visibility.Collapsed : Visibility.Visible;
+        var lesson = key == "methods" ? TeachingMethods.Find(currentTopic) : null;
+        var board = key == "visuals" ? VisualLessons.Find(currentTopic) : null;
+        bool interactive = lesson is not null || board is not null || key == "assessment";
+        MethodPanel.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        TextArea.Visibility = ResourceStore.UsesFiles(key) || interactive ? Visibility.Collapsed : Visibility.Visible;
+        MethodPanel.Children.Clear();
+        if (lesson is not null) ShowTeachingMethod(lesson);
+        if (board is not null) ShowVisualBoard(board);
+        if (key == "assessment") ShowTopicAssessment();
         SaveStatus.Text = "";
         try
         {
-            string text = TopicPages.Read(currentTopic, key);
+            string text = key == "glossary" ? store.ReadGlossary(currentTopic) : TopicPages.Read(currentTopic, key);
             PreviewText.Text = string.IsNullOrWhiteSpace(text) ? "Bu mavzu uchun material hali tayyorlanmagan." : text;
+            if (key == "glossary")
+            {
+                PreviewArea.Visibility = Visibility.Collapsed;
+                RenderTopicGlossaryCards(text);
+            }
+            else
+            {
+                TextAreaTitle.Text = "O‘quv materiali";
+                GlossaryContainer.Visibility = Visibility.Collapsed;
+                PreviewArea.Visibility = Visibility.Visible;
+            }
             if (ResourceStore.UsesFiles(key)) RefreshFiles();
             if (key == "lecture")
             {
                 var files = store.Files(currentTopic, key).Select(p => new ResourceFile(p)).ToList();
-                LectureFiles.SelectedIndex = -1;
-                LectureFiles.ItemsSource = files;
-                LectureFiles.Visibility = files.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
                 if (files.Count > 0)
                 {
-                    PageScroll.Visibility = Visibility.Collapsed;
-                    LectureReader.Visibility = Visibility.Visible;
-                    LectureCaption.Text = allTopics[currentTopic - 1].Title + " · Ma’ruza";
-                    LectureFiles.SelectedIndex = 0;
+                    OpenReader(files, files[0]);
                 }
             }
         }
@@ -199,7 +390,9 @@ public partial class MainWindow : Window
     private async void SelectLectureFile(object sender, SelectionChangedEventArgs e)
     {
         if (LectureFiles.SelectedItem is not ResourceFile file || LectureReader.Visibility != Visibility.Visible) return;
-        await LectureViewer.OpenAsync(file.Path);
+        var opening = LectureViewer.OpenAsync(file.Path);
+        UpdateProjectionControls();
+        await opening;
     }
     private static readonly RoutedUICommand OpenAdminCommand = new("Admin", "OpenAdmin", typeof(MainWindow));
     private void OpenAdmin(object sender, ExecutedRoutedEventArgs e)
@@ -212,9 +405,15 @@ public partial class MainWindow : Window
             if (login.ShowDialog() != true) return;
             new AdminPanel(catalog, store) { Owner = this }.ShowDialog();
             allTopics = catalog.Load();
-            SearchTopics(TopicSearch, new TextChangedEventArgs(TextBox.TextChangedEvent, UndoAction.None));
+            RefreshTopics();
             if (TopicPanel.Visibility == Visibility.Visible) DisplayTopic(currentTopic);
             if (ResourcePage.Visibility == Visibility.Visible) SelectResource(currentResource);
+            if (SectionPanel.Visibility == Visibility.Visible)
+            {
+                if (SectionTitle.Text == "Glossariy") ShowPage("glossary");
+                else if (SectionTitle.Text == "Media kutubxona") ShowPage("media");
+                else if (SectionTitle.Text == "Mustaqil ta’lim") ShowPage("independent");
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         { MessageBox.Show(this, "Admin panel ochilmadi: " + ex.Message); }
@@ -223,16 +422,142 @@ public partial class MainWindow : Window
     private void RefreshFiles()
     {
         var files = store.Files(currentTopic, currentResource).Select(p => new ResourceFile(p)).ToList();
+        if (currentResource == "media")
+        {
+            inlineVideos = files.Where(file => file.Format is "MP4" or "WMV" or "AVI" or "MOV").ToList();
+            files.RemoveAll(inlineVideos.Contains);
+            InlineMedia.Visibility = inlineVideos.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            InlineVideoSelection.ItemsSource = Enumerable.Range(1, inlineVideos.Count).Select(number => $"Video {number}");
+            InlineVideoSelection.Visibility = inlineVideos.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            InlineVideoSelection.SelectedIndex = inlineVideos.Count > 0 ? 0 : -1;
+        }
         ResourceFiles.ItemsSource = files;
-        FileEmpty.Visibility = files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        FileEmpty.Visibility = files.Count == 0 && inlineVideos.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
-    private async void OpenResourceFile(object sender, RoutedEventArgs e)
+
+    private async void SelectInlineVideo(object sender, SelectionChangedEventArgs e)
+    {
+        int index = InlineVideoSelection.SelectedIndex;
+        if (index >= 0 && index < inlineVideos.Count)
+            await InlineViewer.OpenAsync(inlineVideos[index].Path, previewVideo: true);
+    }
+
+    private void OpenInlineVideoFullscreen(object sender, RoutedEventArgs e)
+    {
+        int index = InlineVideoSelection.SelectedIndex;
+        if (index < 0 || index >= inlineVideos.Count) return;
+
+        OpenReader(inlineVideos, inlineVideos[index]);
+        ToggleProjection(sender, e);
+    }
+    private void OpenResourceFile(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string path }) return;
-        await Viewer.OpenAsync(path);
-        AnimateEntrance(Viewer);
-        Viewer.BringIntoView();
+
+        var files = store.Files(currentTopic, currentResource).Select(file => new ResourceFile(file)).ToList();
+        var selected = new ResourceFile(path);
+        if (!files.Contains(selected)) files.Add(selected);
+        OpenReader(files, selected);
     }
+
+    private void OpenReader(List<ResourceFile> files, ResourceFile selected)
+    {
+        InlineViewer.Reset();
+        PageScroll.Visibility = Visibility.Collapsed;
+        LectureReader.Visibility = Visibility.Visible;
+        LectureCaption.Text = allTopics[currentTopic - 1].Title + " · " + (currentResource == "library" ? "Video" : ResourceTitle.Text);
+        LectureFiles.ItemsSource = files;
+        LectureFiles.Visibility = files.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        LectureFiles.SelectedIndex = files.IndexOf(selected);
+        ProjectionButton.Focus();
+    }
+
+    private void LeaveReader(object sender, RoutedEventArgs e)
+    {
+        if (currentResource == "library") ShowPage("media");
+        else if (currentResource == "lecture") DisplayTopic(currentTopic);
+        else SelectResource(currentResource);
+    }
+
+    private void HandleProjectionKey(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F11 && LectureReader.Visibility == Visibility.Visible)
+        {
+            if (!e.IsRepeat) ToggleProjection(sender, e);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && projectionWindow is not null)
+        {
+            ExitProjection();
+            e.Handled = true;
+        }
+        else if (projectionWindow is not null && currentResource == "slides" && Keyboard.Modifiers == ModifierKeys.None
+            && !LectureFiles.IsKeyboardFocusWithin && e.Key is Key.Left or Key.Right)
+        {
+            e.Handled = LectureViewer.MoveSlide(e.Key == Key.Left ? -1 : 1);
+        }
+    }
+
+    private void UpdateProjectionControls()
+    {
+        LectureZoom.Visibility = projectionWindow is not null && currentResource == "lecture" && !LectureViewer.IsPdf
+            ? Visibility.Visible : Visibility.Collapsed;
+        ZoomReset.Content = $"{LectureViewer.DocumentZoom * 100:0}%";
+        ProjectionButton.ToolTip = currentResource == "lecture" && LectureViewer.IsPdf
+            ? "PDF matnini PDF panelidagi + va − tugmalari bilan kattalashtiring yoki kichraytiring."
+            : currentResource == "slides" ? "PPTX slaydlarini ← va → tugmalari bilan almashtiring." : null;
+    }
+
+    private void ChangeLectureZoom(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string action }) return;
+        double zoom = action == "reset" ? 1 : LectureViewer.DocumentZoom + (action == "+" ? .25 : -.25);
+        LectureViewer.SetDocumentZoom(Math.Clamp(zoom, .75, 3));
+        UpdateProjectionControls();
+    }
+
+    private void ToggleProjection(object sender, RoutedEventArgs e)
+    {
+        if (projectionWindow is not null)
+        {
+            ExitProjection();
+            return;
+        }
+        if (LectureReader.Visibility != Visibility.Visible) return;
+
+        projectionWindow = (WindowStyle, ResizeMode, WindowState);
+        WindowStyle = WindowStyle.None;
+        ResizeMode = ResizeMode.NoResize;
+        WindowState = WindowState.Maximized;
+        Grid.SetColumn(LectureReader, 0);
+        Grid.SetColumnSpan(LectureReader, 2);
+        LectureReader.Margin = new Thickness(0);
+        LectureReader.Background = System.Windows.Media.Brushes.Black;
+        ReaderToolbar.Margin = new Thickness(12, 4, 12, 4);
+        ReaderBack.Visibility = Visibility.Collapsed;
+        ProjectionButton.Content = "To‘liq ekrandan chiqish · Esc";
+        UpdateProjectionControls();
+        ProjectionButton.Focus();
+    }
+
+    private void ExitProjection()
+    {
+        if (projectionWindow is not { } previous) return;
+
+        projectionWindow = null;
+        WindowStyle = previous.Style;
+        ResizeMode = previous.Resize;
+        WindowState = previous.State;
+        Grid.SetColumnSpan(LectureReader, 1);
+        Grid.SetColumn(LectureReader, 1);
+        LectureReader.Margin = new Thickness(24, 90, 24, 18);
+        LectureReader.Background = new SolidColorBrush(Color.FromRgb(11, 18, 32));
+        ReaderToolbar.Margin = new Thickness(0, 0, 0, 10);
+        ReaderBack.Visibility = Visibility.Visible;
+        ProjectionButton.Content = "⛶  To‘liq ekran · F11";
+        UpdateProjectionControls();
+    }
+
     private void AnimateEntrance(UIElement panel)
     {
         panel.BeginAnimation(OpacityProperty, null);
@@ -247,11 +572,20 @@ public partial class MainWindow : Window
 
     private void SearchTopics(object sender, TextChangedEventArgs e)
     {
-        if (TopicsList is null || NoTopics is null) return;
+        if (TopicsList is not null && NoTopics is not null) RefreshTopics();
+    }
+
+    private void RefreshTopics()
+    {
+        var sectionTopics = allTopics.Where(t => topicList == "topics" || t.IsPractical == (topicList == "practice")).ToList();
+        int count = sectionTopics.Count;
+        TopicsBadge.Text = $"{count} TA MAVZU";
+        HoursBadge.Text = $"{count * 2} SOAT";
+        TopicsIllustrationCount.Text = count.ToString();
         string query = TopicSearch.Text.Trim();
-        var matches = allTopics.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase) || t.Number.ToString().Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        var matches = sectionTopics.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase) || t.Number.ToString().Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
         TopicsList.ItemsSource = matches;
-        TopicCount.Text = query.Length == 0 ? "20 ta mavzu · o‘z qadamingizda o‘rganing" : $"{matches.Count} ta mavzu topildi / 20";
+        TopicCount.Text = query.Length == 0 ? $"{count} ta mavzu · {count * 2} soat" : $"{matches.Count} ta mavzu topildi / {count}";
         NoTopics.Visibility = matches.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -292,8 +626,16 @@ public partial class MainWindow : Window
     {
         if (sender is not Button card) return;
         active = active || card.IsMouseOver || card.IsKeyboardFocusWithin;
-        card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#2DD4BF" : "#2C3C54"));
-        card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#19313F" : "#131F32"));
+        var topic = card.DataContext as TopicEntry;
+        string highlight = topic?.Accent ?? (card.DataContext is TopicResource resource ? resource.Color : "#2DD4BF");
+        bool homeCard = card.Tag is "theory" or "practice" or "tests";
+        card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active
+            ? homeCard ? "#BCE5F1FF" : highlight
+            : homeCard || topic is not null ? "#59DDE8FF" : "#2C3C54"));
+        card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(homeCard
+            ? active ? "#C31D2840" : "#A9131F32"
+            : topic is not null ? active ? "#CF1D2840" : "#B8131F32"
+            : active ? "#19313F" : "#131F32"));
         // Keep the button's hit target stationary. Template transforms can be
         // frozen/shared by WPF; animate a fresh, instance-owned content transform.
         if (card.Content is not FrameworkElement content) return;
@@ -326,22 +668,48 @@ public partial class MainWindow : Window
     {
         Medi.SetMotion(motionEnabled);
         MotionButton.Content = motionEnabled ? "◉   Animatsiya: yoqilgan" : "○   Animatsiya: o‘chirilgan";
-        int index = 0;
-        foreach (var element in new[] { FloatOne, FloatTwo, FloatThree })
+        if (!motionEnabled) FactResult.BeginAnimation(OpacityProperty, null);
+        if (!motionEnabled && welcomeDocking) FinishMediWelcome();
+    }
+
+    private void RecordTopicView(int topic)
+    {
+        if (topic >= 1 && topic <= 20)
         {
-            var transform = (TranslateTransform)element.RenderTransform;
-            transform.BeginAnimation(TranslateTransform.YProperty, null);
-            if (motionEnabled)
-            {
-                transform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation
-                {
-                    From = 0, To = index % 2 == 0 ? -7 : 6,
-                    Duration = TimeSpan.FromSeconds(2.4 + index * .4),
-                    AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever,
-                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-                });
-            }
-            index++;
+            viewedTopics.Add(topic);
+            CourseProgressBar.Value = viewedTopics.Count;
+            int percent = (int)Math.Round((double)viewedTopics.Count / 20.0 * 100);
+            ProgressPercentage.Text = $"{percent}%";
+            ProgressDetail.Text = $"{viewedTopics.Count} / 20 mavzu ko‘rildi";
+        }
+    }
+
+    private void UpdateNavSelection(string activeKey)
+    {
+        var navButtons = new (Button Button, string Key)[]
+        {
+            (HomeNav, "home"),
+            (IndependentNav, "independent"),
+            (MediaNav, "media"),
+            (TestsNav, "tests"),
+            (GlossaryNav, "glossary"),
+            (AuthorNav, "author")
+        };
+
+        foreach (var (btn, k) in navButtons)
+        {
+            bool active = k == activeKey;
+            btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#17363C" : "#0E1828"));
+            btn.Foreground = (Brush)new BrushConverter().ConvertFromString(active ? "#5EEAD4" : "#BACBDD")!;
+        }
+    }
+
+    private void AskAiAboutTopic(object sender, RoutedEventArgs e)
+    {
+        if (currentTopic >= 1 && currentTopic <= allTopics.Count)
+        {
+            Medi.SetTopic(currentTopic);
+            Medi.Open();
         }
     }
 }
