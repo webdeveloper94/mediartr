@@ -39,19 +39,20 @@ public static class DocumentMarkup
                 foreach (var paragraph in xml.Descendants().Where(e => e.Name.LocalName == "p"))
                 {
                     string text = string.Concat(paragraph.Descendants().Where(e => e.Name.LocalName == "t").Select(e => e.Value));
-                    if (!string.IsNullOrWhiteSpace(text)) html.Append("<p>" + Encode(text) + "</p>");
-                }
-                string folder = entry.FullName[..(entry.FullName.LastIndexOf('/') + 1)];
-                var relEntry = zip.GetEntry(folder + "_rels/" + entry.Name + ".rels");
-                if (relEntry is not null && imageCount < 30)
-                {
-                    using var relStream = relEntry.Open();
-                    using var relReader = XmlReader.Create(relStream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, MaxCharactersInDocument = 1_000_000 });
-                    var relations = XDocument.Load(relReader);
-                    foreach (var blip in xml.Descendants().Where(e => e.Name.LocalName == "blip").Take(30 - imageCount))
+                    
+                    // Check if paragraph contains blip (embedded image)
+                    var blips = paragraph.Descendants().Where(e => e.Name.LocalName == "blip").ToList();
+                    foreach (var blip in blips)
                     {
+                        if (imageCount >= 30) break;
+                        string folderPath = entry.FullName[..(entry.FullName.LastIndexOf('/') + 1)];
+                        var relE = zip.GetEntry(folderPath + "_rels/" + entry.Name + ".rels");
+                        if (relE is null) continue;
+                        using var relStm = relE.Open();
+                        using var relRdr = XmlReader.Create(relStm, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, MaxCharactersInDocument = 1_000_000 });
+                        var rels = XDocument.Load(relRdr);
                         string? id = blip.Attributes().FirstOrDefault(a => a.Name.LocalName == "embed")?.Value;
-                        var relation = relations.Descendants().FirstOrDefault(e => e.Attribute("Id")?.Value == id);
+                        var relation = rels.Descendants().FirstOrDefault(e => e.Attribute("Id")?.Value == id);
                         if (relation is null || relation.Attribute("TargetMode")?.Value == "External") continue;
                         string? target = relation.Attribute("Target")?.Value;
                         if (target is null) continue;
@@ -62,7 +63,19 @@ public static class DocumentMarkup
                         string? mime = extension switch { ".png" => "image/png", ".jpg" or ".jpeg" => "image/jpeg", ".gif" => "image/gif", _ => null };
                         if (mime is null) continue;
                         using var imageStream = image.Open(); using var memory = new MemoryStream(); imageStream.CopyTo(memory);
-                        html.Append($"<img alt='Hujjat rasmi' src='data:{mime};base64,{Convert.ToBase64String(memory.ToArray())}'/>"); imageCount++;
+                        html.Append($"<div class='doc-img-box'><img alt='Didaktik ko‘rgazmali tasvir' src='data:{mime};base64,{Convert.ToBase64String(memory.ToArray())}'/></div>");
+                        imageCount++;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        string styleVal = paragraph.Descendants().FirstOrDefault(e => e.Name.LocalName == "pStyle")?.Attribute(XName.Get("val", "http://schemas.openxmlformats.org/wordprocessingml/2006/main"))?.Value ?? "";
+                        if (styleVal.Contains("Heading1", StringComparison.OrdinalIgnoreCase) || styleVal.Contains("Title", StringComparison.OrdinalIgnoreCase))
+                            html.Append("<h2>" + Encode(text) + "</h2>");
+                        else if (styleVal.Contains("Heading2", StringComparison.OrdinalIgnoreCase))
+                            html.Append("<h3>" + Encode(text) + "</h3>");
+                        else
+                            html.Append("<p>" + Encode(text) + "</p>");
                     }
                 }
                 html.Append("</section>");
@@ -71,6 +84,6 @@ public static class DocumentMarkup
             slideCount = page;
             body = html.ToString();
         }
-        return "<!doctype html><html lang='uz'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><style>body{margin:0;padding:24px;background:#e9eef4;color:#172033;font:18px Calibri,Segoe UI,sans-serif}section{background:#fff;max-width:950px;margin:0 auto 24px;padding:36px;border-radius:12px}body:has(section:target) section:not(:target){display:none}section:target{min-height:calc(100vh - 48px);box-sizing:border-box}aside{max-width:950px;margin:0 auto 20px;font:13px Segoe UI;color:#42536c}p{line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}pre{white-space:pre-wrap;font:inherit;overflow-wrap:anywhere}img{max-width:100%;max-height:650px;object-fit:contain;display:block;margin:20px auto}h2{color:#167b73}</style>" + body + "</html>";
+        return "<!doctype html><html lang='uz'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><style>body{margin:0;padding:28px 16px;background:#0F172A;color:#E2E8F0;font:14pt/1.0 'Calibri','Segoe UI',sans-serif}section{background:#1E293B;max-width:920px;margin:0 auto 28px;padding:42px 48px;border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,0.35);border:1px solid #334155}body:has(section:target) section:not(:target){display:none}section:target{min-height:calc(100vh - 48px);box-sizing:border-box}aside{max-width:920px;margin:0 auto 16px;font:11pt 'Calibri';color:#94A3B8;text-align:right}p{margin:0 0 10px;line-height:1.0;font-family:'Calibri',sans-serif;font-size:14pt;white-space:pre-wrap;overflow-wrap:anywhere}h2{color:#2DD4BF;font-size:17pt;font-family:'Calibri',sans-serif;border-bottom:2px solid #0EA5E9;padding-bottom:10px;margin-top:0;margin-bottom:20px}h3{color:#38BDF8;font-size:15pt;font-family:'Calibri',sans-serif;margin-top:20px;margin-bottom:10px}.doc-img-box{text-align:center;margin:24px 0;background:#0B132B;padding:12px;border-radius:14px;border:1px solid #2DD4BF44;box-shadow:0 8px 24px rgba(0,0,0,0.4)}img{max-width:100%;max-height:480px;object-fit:contain;border-radius:8px;display:inline-block}pre{white-space:pre-wrap;font:inherit;overflow-wrap:anywhere}</style>" + body + "</html>";
     }
 }

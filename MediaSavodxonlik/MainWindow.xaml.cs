@@ -126,6 +126,7 @@ public partial class MainWindow : Window
         Medi.CloseWelcomeBubble();
         MediMessage.Text = message;
         MediMessageButton.Content = button;
+        MediDimOverlay.Visibility = Visibility.Visible;
         MediWelcomeArea.Visibility = Visibility.Visible;
         UpdateLayout();
         CenterMedi();
@@ -133,6 +134,7 @@ public partial class MainWindow : Window
         MediMessageButton.Focus();
         if (motionEnabled)
         {
+            MediDimOverlay.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250)) { FillBehavior = FillBehavior.Stop });
             Medi.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220)) { FillBehavior = FillBehavior.Stop });
             MediWelcome.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220)) { FillBehavior = FillBehavior.Stop });
         }
@@ -152,7 +154,7 @@ public partial class MainWindow : Window
 
     private void DismissMediWelcome(object sender, RoutedEventArgs e)
     {
-        if (MediWelcomeArea.Visibility != Visibility.Visible) return;
+        if (MediWelcomeArea.Visibility != Visibility.Visible && MediDimOverlay.Visibility != Visibility.Visible) return;
         welcomeTimer.Stop();
         if (!motionEnabled)
         {
@@ -160,6 +162,9 @@ public partial class MainWindow : Window
             return;
         }
         MediWelcomeArea.Visibility = Visibility.Collapsed;
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+        fadeOut.Completed += (_, _) => MediDimOverlay.Visibility = Visibility.Collapsed;
+        MediDimOverlay.BeginAnimation(OpacityProperty, fadeOut);
         welcomeDocking = true;
         var transform = (TransformGroup)Medi.RenderTransform;
         var scale = (ScaleTransform)transform.Children[0];
@@ -180,6 +185,8 @@ public partial class MainWindow : Window
     {
         welcomeTimer.Stop();
         welcomeDocking = false;
+        MediDimOverlay.Visibility = Visibility.Collapsed;
+        MediDimOverlay.BeginAnimation(OpacityProperty, null);
         MediWelcomeArea.Visibility = Visibility.Collapsed;
         MediWelcome.BeginAnimation(OpacityProperty, null);
         Medi.BeginAnimation(OpacityProperty, null);
@@ -234,6 +241,7 @@ public partial class MainWindow : Window
         {
             SectionContent.Children.Clear();
             SectionOverview.Visibility = key == "about" ? Visibility.Visible : Visibility.Collapsed;
+            ModuleProgramCard.Visibility = key == "about" ? Visibility.Visible : Visibility.Collapsed;
         }
         if (home) Breadcrumb.Text = "O‘quv maydoni   /   Bosh sahifa";
         else if (topics)
@@ -342,13 +350,13 @@ public partial class MainWindow : Window
         ResourceStatus.Text = $"{currentTopic}-mavzu / {resource.Title}";
         ResourceDescription.Text = resource.Description;
         Breadcrumb.Text = $"O‘quv maydoni / {currentTopic}-mavzu / {resource.Title}";
-        ResourceMode.Text = ResourceStore.UsesFiles(key) ? "FAYL RESURSI" : "SAHIFA KONTENTI";
-        FileArea.Visibility = ResourceStore.UsesFiles(key) ? Visibility.Visible : Visibility.Collapsed;
+        ResourceMode.Text = (ResourceStore.UsesFiles(key) && key != "visuals") ? "FAYL RESURSI" : "SAHIFA KONTENTI";
+        FileArea.Visibility = (ResourceStore.UsesFiles(key) && key != "visuals") ? Visibility.Visible : Visibility.Collapsed;
         var lesson = key == "methods" ? TeachingMethods.Find(currentTopic) : null;
         var board = key == "visuals" ? VisualLessons.Find(currentTopic) : null;
         bool interactive = lesson is not null || board is not null || key == "assessment";
         MethodPanel.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
-        TextArea.Visibility = ResourceStore.UsesFiles(key) || interactive ? Visibility.Collapsed : Visibility.Visible;
+        TextArea.Visibility = (ResourceStore.UsesFiles(key) && key != "visuals") || interactive ? Visibility.Collapsed : Visibility.Visible;
         MethodPanel.Children.Clear();
         if (lesson is not null) ShowTeachingMethod(lesson);
         if (board is not null) ShowVisualBoard(board);
@@ -469,10 +477,81 @@ public partial class MainWindow : Window
         LectureFiles.ItemsSource = files;
         LectureFiles.Visibility = files.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         LectureFiles.SelectedIndex = files.IndexOf(selected);
+        DownloadLectureButton.Visibility = currentResource == "lecture" ? Visibility.Visible : Visibility.Collapsed;
         ProjectionButton.Focus();
     }
 
-    private void LeaveReader(object sender, RoutedEventArgs e)
+    private void DownloadCurrentLecture(object sender, RoutedEventArgs e)
+    {
+        if (LectureFiles.SelectedItem is not ResourceFile file || !File.Exists(file.Path))
+        {
+            MessageBox.Show(this, "Yuklab olish uchun fayl topilmadi.", "Ogohlantirish", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var saveDialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = file.Name,
+            DefaultExt = Path.GetExtension(file.Path),
+            Filter = "Word hujjati (*.docx)|*.docx|Barcha fayllar (*.*)|*.*",
+            Title = "Ma’ruza matnini yuklab olish"
+        };
+
+        if (saveDialog.ShowDialog() == true)
+        {
+            try
+            {
+                File.Copy(file.Path, saveDialog.FileName, true);
+                MessageBox.Show(this, "Ma’ruza matni muvaffaqiyatli yuklab olindi!\n\n" + saveDialog.FileName, "Muvaffaqiyatli", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Faylni saqlashda xatolik yuz berdi: " + ex.Message, "Xatolik", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    
+    private void DownloadModuleProgram(object sender, RoutedEventArgs e)
+    {
+        string[] candidates =
+        [
+            Path.Combine(AppContext.BaseDirectory, "Content", "Media axborot.pdf"),
+            Path.Combine(AppContext.BaseDirectory, "Media axborot.pdf"),
+            Path.Combine(Directory.GetCurrentDirectory(), "Content", "Media axborot.pdf"),
+            Path.Combine(Directory.GetCurrentDirectory(), "Media axborot.pdf")
+        ];
+
+        string? sourcePath = candidates.FirstOrDefault(File.Exists);
+        if (sourcePath is null)
+        {
+            MessageBox.Show(this, "Modul dasturi PDF fayli topilmadi.", "Ogohlantirish", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var saveDialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = "Media va axborot savodxonligi - Modul dasturi.pdf",
+            DefaultExt = ".pdf",
+            Filter = "PDF hujjati (*.pdf)|*.pdf|Barcha fayllar (*.*)|*.*",
+            Title = "Modul dasturini yuklab olish"
+        };
+
+        if (saveDialog.ShowDialog() == true)
+        {
+            try
+            {
+                File.Copy(sourcePath, saveDialog.FileName, true);
+                MessageBox.Show(this, "Modul dasturi muvaffaqiyatli yuklab olindi!", "Muvaffaqiyat", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Faylni saqlashda xatolik yuz berdi: " + ex.Message, "Xatolik", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+private void LeaveReader(object sender, RoutedEventArgs e)
     {
         if (currentResource == "library") ShowPage("media");
         else if (currentResource == "lecture") DisplayTopic(currentTopic);
@@ -629,18 +708,25 @@ public partial class MainWindow : Window
         var topic = card.DataContext as TopicEntry;
         string highlight = topic?.Accent ?? (card.DataContext is TopicResource resource ? resource.Color : "#2DD4BF");
         bool homeCard = card.Tag is "theory" or "practice" or "tests";
-        card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active
-            ? homeCard ? "#BCE5F1FF" : highlight
-            : homeCard || topic is not null ? "#59DDE8FF" : "#2C3C54"));
-        card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(homeCard
-            ? active ? "#C31D2840" : "#A9131F32"
-            : topic is not null ? active ? "#CF1D2840" : "#B8131F32"
-            : active ? "#19313F" : "#131F32"));
+        if (topic is not null && card.Content is Border border)
+        {
+            border.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? highlight : "#354966"));
+            border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active ? "#F0132238" : "#DD111D2E"));
+        }
+        else
+        {
+            card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(active
+                ? homeCard ? "#BCE5F1FF" : highlight
+                : homeCard ? "#59DDE8FF" : "#2C3C54"));
+            card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(homeCard
+                ? active ? "#C31D2840" : "#A9131F32"
+                : active ? "#19313F" : "#131F32"));
+        }
         // Keep the button's hit target stationary. Template transforms can be
         // frozen/shared by WPF; animate a fresh, instance-owned content transform.
         if (card.Content is not FrameworkElement content) return;
         double from = content.RenderTransform is TranslateTransform previous ? previous.Y : 0;
-        double to = motionEnabled && active ? -3 : 0;
+        double to = motionEnabled && active ? -4 : 0;
         var transform = new TranslateTransform(0, to);
         content.RenderTransform = transform;
         if (motionEnabled) transform.BeginAnimation(TranslateTransform.YProperty,
@@ -693,6 +779,7 @@ public partial class MainWindow : Window
             (MediaNav, "media"),
             (TestsNav, "tests"),
             (GlossaryNav, "glossary"),
+            (AboutNav, "about"),
             (AuthorNav, "author")
         };
 

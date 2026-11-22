@@ -9,7 +9,8 @@ public sealed class ResourceStore(string root)
     {
         ["lecture"] = [".pdf", ".docx", ".txt"],
         ["slides"] = [".pptx", ".pdf", ".jpg", ".jpeg", ".png"],
-        ["media"] = [".mp4", ".wmv", ".avi", ".mov", ".mp3", ".wav", ".gif"]
+        ["media"] = [".mp4", ".wmv", ".avi", ".mov", ".mp3", ".wav", ".gif"],
+        ["visuals"] = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]
     };
     public static bool UsesFiles(string key) => AllowedFiles.ContainsKey(key);
     public static string Extensions(string key) => string.Join(";", AllowedFiles[key].Select(x => "*" + x));

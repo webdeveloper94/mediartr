@@ -15,13 +15,34 @@ public partial class MediChat : UserControl
     public event Action? Closed;
     public event Action? GuideRequested;
     private readonly Dictionary<int, List<ChatTurn>> history = new();
+    private System.Windows.Threading.DispatcherTimer? thinkingTimer;
+    private int dotsCount = 0;
     private CancellationTokenSource? pending;
     private int? topic;
 
     public MediChat()
     {
         InitializeComponent();
+        Loaded += (_, _) => UpdateKeyStatus();
         Unloaded += (_, _) => pending?.Cancel();
+    }
+
+    public void UpdateKeyStatus()
+    {
+        bool hasSys = ApiKeyStore.HasSystemKey();
+        bool hasEnv = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
+        if (hasSys || hasEnv)
+        {
+            SystemKeyStatus.Text = "✓ Tizim API kaliti faol ulangan";
+            SystemKeyStatus.Foreground = (Brush)new BrushConverter().ConvertFromString("#5EEAD4")!;
+            SystemKeyStatus.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            SystemKeyStatus.Text = "⚠️ Tizim kaliti kiritilmagan. Shaxsiy kalit kiriting:";
+            SystemKeyStatus.Foreground = (Brush)new BrushConverter().ConvertFromString("#FBBF24")!;
+            SystemKeyStatus.Visibility = Visibility.Visible;
+        }
     }
     public void SetTopic(int? number)
     {
@@ -55,6 +76,29 @@ public partial class MediChat : UserControl
         SendButton.IsEnabled = !busy && topic is not null;
         CancelButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         Question.IsReadOnly = busy;
+        ThinkingBox.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+
+        if (busy)
+        {
+            dotsCount = 0;
+            if (thinkingTimer is null)
+            {
+                thinkingTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(400)
+                };
+                thinkingTimer.Tick += (_, _) =>
+                {
+                    dotsCount = (dotsCount + 1) % 4;
+                    ThinkingDots.Text = new string('•', dotsCount == 0 ? 1 : dotsCount);
+                };
+            }
+            thinkingTimer.Start();
+        }
+        else
+        {
+            thinkingTimer?.Stop();
+        }
     }
     private async void SendQuestion(object sender, RoutedEventArgs e) => await SendAsync();
     public async Task SendAsync()
@@ -62,7 +106,7 @@ public partial class MediChat : UserControl
         if (pending is not null || topic is not int number) return;
         string question = Question.Text.Trim();
         if (question.Length == 0) { Status.Text = "Avval savolingizni yozing."; return; }
-        string key = string.IsNullOrWhiteSpace(ApiKey.Password) ? Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "" : ApiKey.Password;
+        string key = ApiKeyStore.ResolveEffectiveKey(ApiKey.Password);
         if (string.IsNullOrWhiteSpace(key)) { Status.Text = "API kalitini sozlash bo‘limiga kalit kiriting."; return; }
         var request = new CancellationTokenSource();
         pending = request;

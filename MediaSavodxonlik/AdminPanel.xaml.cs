@@ -25,7 +25,11 @@ public partial class AdminPanel : Window
         entries = catalog.Load();
         ResourceType.SelectedIndex = 0;
         FilterTopics(1);
-        Loaded += (_, _) => TopicSearch.Focus();
+        Loaded += (_, _) =>
+        {
+            TopicSearch.Focus();
+            RefreshSystemKeyStatus();
+        };
         Closing += (_, e) =>
         {
             e.Cancel = busy || ((drafts.Count > 0 || glossaryDrafts.Count > 0) && MessageBox.Show(this,
@@ -235,6 +239,69 @@ public partial class AdminPanel : Window
             Status.Text = "Fayl o‘chirilmadi. " + ex.Message;
         }
         RefreshFiles();
+    }
+
+    
+    private void RefreshSystemKeyStatus()
+    {
+        bool hasKey = ApiKeyStore.HasSystemKey();
+        if (hasKey)
+        {
+            SystemKeyStatusLabel.Text = "✓ Tizim kaliti o‘rnatilgan va faol";
+            SystemKeyStatusLabel.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#5EEAD4")!;
+        }
+        else
+        {
+            SystemKeyStatusLabel.Text = "Kalit mavjud emas";
+            SystemKeyStatusLabel.Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#94A3B8")!;
+        }
+    }
+
+    private void SaveSystemApiKey(object sender, RoutedEventArgs e)
+    {
+        string newKey = AdminApiKeyInput.Password.Trim();
+        if (string.IsNullOrWhiteSpace(newKey))
+        {
+            MessageBox.Show(this, "Iltimos, avval API kalitini kiriting.", "Ogohlantirish", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            ApiKeyStore.SaveSystemKey(newKey);
+            AdminApiKeyInput.Clear();
+            RefreshSystemKeyStatus();
+            Status.Text = "Medi AI tizim kaliti muvaffaqiyatli shifrlanib saqlandi!";
+            MessageBox.Show(this, "Tizim kaliti muvaffaqiyatli saqlandi! Endi dastur tarqatilganda barcha foydalanuvchilarda Medi yordamchisi avtomatik ishlaydi.", "Muvaffaqiyat", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Kalitni saqlashda xatolik yuz berdi: " + ex.Message, "Xatolik", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ClearSystemApiKey(object sender, RoutedEventArgs e)
+    {
+        if (!ApiKeyStore.HasSystemKey())
+        {
+            MessageBox.Show(this, "Hozirda tizim kaliti o‘rnatilmagan.", "Ma’lumot", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (MessageBox.Show(this, "Haqiqatan ham tizim API kalitini o‘chirmoqchimisiz?", "Tasdiqlash", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            try
+            {
+                ApiKeyStore.SaveSystemKey("");
+                AdminApiKeyInput.Clear();
+                RefreshSystemKeyStatus();
+                Status.Text = "Tizim API kaliti o‘chirildi.";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Kalitni o‘chirishda xatolik: " + ex.Message, "Xatolik", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
     private void ClosePanel(object sender, RoutedEventArgs e) => Close();

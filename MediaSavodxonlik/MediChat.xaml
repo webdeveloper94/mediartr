@@ -2,12 +2,36 @@
  <Border Background="#142438" BorderBrush="#38756F" BorderThickness="1" CornerRadius="18" Padding="16">
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel>
    <DockPanel><Button DockPanel.Dock="Right" Content="×" Click="CloseChat" Padding="6,0" FontSize="20" AutomationProperties.Name="Suhbatni yopish"/><StackPanel><TextBlock Text="MEDI · gpt-6-luna" Foreground="#5EEAD4" FontSize="11" FontWeight="Bold"/><TextBlock x:Name="TopicLabel" Foreground="#F1F5F9" FontSize="17" FontWeight="SemiBold" Margin="0,6,0,0"/></StackPanel></DockPanel>
-   <Expander Header="API kalitini sozlash" Foreground="#BAC8D9" FontSize="11" Margin="0,12,0,8"><StackPanel Margin="0,8"><TextBlock Text="OpenAI API kaliti (faqat joriy ishga tushirish uchun)" TextWrapping="Wrap"/><PasswordBox x:Name="ApiKey" Background="#0B1828" Foreground="#F1F5F9" Padding="9" Margin="0,8" AutomationProperties.Name="OpenAI API kaliti"/><TextBlock Text="Kalit faylga yozilmaydi. OPENAI_API_KEY muhit sozlamasidan ham foydalanish mumkin." Foreground="#93A4BA" TextWrapping="Wrap"/></StackPanel></Expander>
+   <Expander Header="API kalitini sozlash" Foreground="#BAC8D9" FontSize="11" Margin="0,12,0,8">
+    <StackPanel Margin="0,8">
+     <TextBlock x:Name="SystemKeyStatus" Text="✓ Tizim API kaliti faol ulangan" Foreground="#5EEAD4" FontWeight="SemiBold" Margin="0,0,0,6"/>
+     <TextBlock Text="Shaxsiy OpenAI kaliti (ixtiyoriy, kiritilmasa tizim kaliti ishlaydi):" TextWrapping="Wrap" Foreground="#94A3B8"/>
+     <PasswordBox x:Name="ApiKey" Background="#0B1828" Foreground="#F1F5F9" Padding="9" Margin="0,6" AutomationProperties.Name="OpenAI API kaliti"/>
+     <TextBlock Text="Kiritilgan shaxsiy kalit faqat joriy seansda foydalaniladi." Foreground="#64748B" FontSize="10" TextWrapping="Wrap"/>
+    </StackPanel>
+   </Expander>
    <TextBlock Text="Yuborilganda savol, shu mavzuning suhbat tarixi va resurs matnlari OpenAI xizmatiga uzatiladi." Foreground="#93A4BA" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,10"/>
    <ScrollViewer x:Name="ConversationScroll" Height="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="Conversation"/></ScrollViewer>
    <StackPanel Orientation="Horizontal" Margin="0,8"><Button Content="Misol keltir" Tag="Shu mavzu bo‘yicha IT-servisdan bir misol keltiring." Click="QuickQuestion" Padding="8,7" FontSize="10" Background="#23413F"/><Button Content="Menga savol ber" Tag="Shu mavzu bo‘yicha bitta o‘ylantiruvchi savol bering." Click="QuickQuestion" Padding="8,7" FontSize="10" Margin="6,0,0,0" Background="#292D48"/></StackPanel>
    <TextBox x:Name="Question" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" Height="58" Background="#0B1828" Foreground="#F1F5F9" CaretBrush="#5EEAD4" BorderBrush="#36566A" Padding="10" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Medi uchun savol"/>
-   <TextBlock x:Name="Status" Text="Savolingizni yozing." Foreground="#99F6E4" FontSize="10" TextWrapping="Wrap" Margin="0,8" AutomationProperties.LiveSetting="Polite"/>
+   <!-- Thinking Indicator Box (Kutish vaqtida ko‘zga tashlanadigan animatsion blok) -->
+   <Border x:Name="ThinkingBox" Visibility="Collapsed" Margin="0,4,0,8"
+           Background="#1C3848" BorderBrush="#2DD4BF" BorderThickness="1.5" CornerRadius="12" Padding="12,9">
+    <DockPanel>
+     <Border DockPanel.Dock="Left" Width="28" Height="28" CornerRadius="14" Background="#132B3A" Margin="0,0,10,0">
+      <TextBlock Text="🤖" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+     </Border>
+     <StackPanel VerticalAlignment="Center">
+      <StackPanel Orientation="Horizontal">
+       <TextBlock Text="O‘ylayapman, kutib turing" Foreground="#5EEAD4" FontSize="12" FontWeight="Bold"/>
+       <TextBlock x:Name="ThinkingDots" Text="•••" Foreground="#5EEAD4" FontSize="12" FontWeight="Bold" Margin="4,0,0,0"/>
+      </StackPanel>
+      <TextBlock Text="Mavzu manbalari tahlil qilinmoqda…" Foreground="#94A3B8" FontSize="10" Margin="0,1,0,0"/>
+     </StackPanel>
+    </DockPanel>
+   </Border>
+
+   <TextBlock x:Name="Status" Text="Savolingizni yozing." Foreground="#99F6E4" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,8" AutomationProperties.LiveSetting="Polite"/>
    <DockPanel><Button x:Name="SendButton" DockPanel.Dock="Right" Content="Yuborish →" Click="SendQuestion" Background="#2DD4BF" Foreground="#082C30" Padding="13,9" FontWeight="SemiBold"/><Button x:Name="CancelButton" DockPanel.Dock="Right" Content="To‘xtatish" Click="CancelRequest" Padding="8,9" Visibility="Collapsed"/><Button Content="Yo‘riqnoma" Click="ShowGuide" FontSize="11" Padding="0,9" HorizontalAlignment="Left"/></DockPanel>
   </StackPanel></ScrollViewer>
  </Border>

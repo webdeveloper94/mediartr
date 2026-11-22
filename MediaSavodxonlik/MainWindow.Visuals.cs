@@ -1,34 +1,283 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Input;
+using System.IO;
 
 namespace MediaSavodxonlik;
 
 public partial class MainWindow
 {
+    private static BitmapImage LoadBitmap(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
+    }
+
     private void ShowVisualBoard(VisualLessons.Board board)
     {
         ResourceDescription.Text = allTopics[currentTopic - 1].Title;
 
-        // Container Grid with 2 columns: Left (Interactive Diagram / Flow), Right (Interactive Scenario & Worked Example)
-        var grid = new Grid { Margin = new Thickness(0, 4, 0, 16) };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.15, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.0, GridUnitType.Star) });
+        // Visual Gallery / Admin uploaded images tabs
+        var visualFiles = store.Files(currentTopic, "visuals");
 
-        var diagram = new StackPanel();
-        var details = new StackPanel();
+        var tabs = new WrapPanel { Margin = new Thickness(0, 0, 0, 14) };
+        var contentHost = new StackPanel();
+        MethodPanel.Children.Add(tabs);
+        MethodPanel.Children.Add(contentHost);
 
-        // 1st Level Surfaces for SmokeTests compatibility (Left = diagram, Right = details)
-        var left = BoardSurface(diagram, "#D80F1E2E", "#403ED1C8");
-        left.Margin = new Thickness(0, 0, 14, 0);
+        (string Label, string Icon, string Accent, Action Render)[] visualSections =
+        [
+            ("Yuklangan ko‘rgazmali rasm", "\uEB9F", "#38BDF8", RenderUploadedVisual),
+            ("Interaktiv tahlil va keys", "\uE73E", "#2DD4BF", RenderInteractiveBoard)
+        ];
 
-        var right = BoardSurface(details, "#ED131D33", "#4A7C6BD6");
-        Grid.SetColumn(right, 1);
+        var tabButtons = new List<RadioButton>();
+        foreach (var sec in visualSections)
+        {
+            var label = new StackPanel { Orientation = Orientation.Horizontal };
+            label.Children.Add(new TextBlock
+            {
+                Text = sec.Icon,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                Foreground = (Brush)new BrushConverter().ConvertFromString(sec.Accent)!,
+                Margin = new Thickness(0, 0, 8, 0),
+                FontSize = 15,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            var txt = CourseText(sec.Label, 14);
+            txt.VerticalAlignment = VerticalAlignment.Center;
+            label.Children.Add(txt);
 
-        grid.Children.Add(left);
-        grid.Children.Add(right);
-        MethodPanel.Children.Add(grid);
+            var radio = new RadioButton
+            {
+                Content = label,
+                GroupName = "VisualSectionsGroup",
+                Padding = new Thickness(8, 0, 0, 0),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Cursor = Cursors.Hand
+            };
+
+            var border = new Border
+            {
+                Child = radio,
+                Background = new SolidColorBrush(Color.FromRgb(23, 37, 57)),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14, 9, 14, 9),
+                Margin = new Thickness(0, 0, 10, 8),
+                BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(68, 86, 108))
+            };
+
+            var defBorder = border.BorderBrush;
+            radio.Checked += (_, _) =>
+            {
+                border.BorderBrush = (Brush)new BrushConverter().ConvertFromString(sec.Accent)!;
+                contentHost.Children.Clear();
+                sec.Render();
+            };
+            radio.Unchecked += (_, _) => border.BorderBrush = defBorder;
+            tabButtons.Add(radio);
+            tabs.Children.Add(border);
+        }
+
+        // Agar admin tomonidan rasm yuklangan bo'lsa 1-qism (Yuklangan rasm), bo'lmasa interaktiv tahlil ochiladi
+        if (visualFiles.Length > 0)
+            tabButtons[0].IsChecked = true;
+        else
+            tabButtons[1].IsChecked = true;
+
+        void RenderUploadedVisual()
+        {
+            var files = store.Files(currentTopic, "visuals");
+            if (files.Length == 0)
+            {
+                var emptyCard = BoardSurface(new StackPanel
+                {
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "\uEB9F",
+                            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                            FontSize = 44,
+                            Foreground = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            Margin = new Thickness(0, 20, 0, 12)
+                        },
+                        new TextBlock
+                        {
+                            Text = "Bu mavzu uchun hali qo‘shimcha ko‘rgazmali rasm yuklanmagan.",
+                            FontSize = 17,
+                            FontWeight = FontWeights.SemiBold,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            Foreground = (Brush)new BrushConverter().ConvertFromString("#F1F5F9")!
+                        },
+                        new TextBlock
+                        {
+                            Text = "Rasm yuklash uchun klaviaturada Ctrl + Shift + A tugmalarini bosing,\nAdmin panelda ushbu mavzuni tanlang va «Ko‘rgazmali» bo‘limiga JPG/PNG faylini yuklang.",
+                            FontSize = 14,
+                            TextAlignment = TextAlignment.Center,
+                            Foreground = (Brush)new BrushConverter().ConvertFromString("#94A3B8")!,
+                            Margin = new Thickness(0, 8, 0, 20)
+                        }
+                    }
+                }, "#D80F1E2E", "#38BDF8");
+                emptyCard.Padding = new Thickness(24);
+                contentHost.Children.Add(emptyCard);
+                return;
+            }
+
+            int selectedImgIndex = 0;
+            var galleryContainer = new StackPanel();
+
+            var imgBorder = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(15, 23, 42)),
+                BorderBrush = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!,
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(16),
+                Padding = new Thickness(16),
+                Margin = new Thickness(0, 0, 0, 16)
+            };
+
+            var imageControl = new Image
+            {
+                Stretch = Stretch.Uniform,
+                MaxHeight = 720,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Cursor = Cursors.Hand
+            };
+
+            var topBar = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
+
+            var fullScreenBtn = new Button
+            {
+                Content = "⛶  To‘liq ekran (Kattalashtirish)",
+                Background = (Brush)new BrushConverter().ConvertFromString("#164E63")!,
+                Foreground = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!,
+                Padding = new Thickness(14, 8, 14, 8),
+                FontWeight = FontWeights.SemiBold,
+                Cursor = Cursors.Hand,
+                ToolTip = "Rasmni to‘liq ekranda ochish"
+            };
+            DockPanel.SetDock(fullScreenBtn, Dock.Right);
+
+            fullScreenBtn.Click += (_, _) =>
+            {
+                if (files.Length > 0 && selectedImgIndex < files.Length)
+                {
+                    var fileList = files.Select(p => new ResourceFile(p)).ToList();
+                    OpenReader(fileList, fileList[selectedImgIndex]);
+                    ToggleProjection(this, new RoutedEventArgs());
+                }
+            };
+
+            // Rasmning o'zini bosganda ham to'liq ekran ochilishi
+            imageControl.MouseDown += (_, e) =>
+            {
+                if (e.ClickCount >= 1 && files.Length > 0 && selectedImgIndex < files.Length)
+                {
+                    var fileList = files.Select(p => new ResourceFile(p)).ToList();
+                    OpenReader(fileList, fileList[selectedImgIndex]);
+                    ToggleProjection(this, new RoutedEventArgs());
+                }
+            };
+
+            var imgCaption = new TextBlock
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Brush)new BrushConverter().ConvertFromString("#94A3B8")!,
+                FontSize = 14,
+                FontStyle = FontStyles.Italic
+            };
+
+            topBar.Children.Add(fullScreenBtn);
+            topBar.Children.Add(imgCaption);
+
+            void UpdateDisplayedImage()
+            {
+                try
+                {
+                    string p = files[selectedImgIndex];
+                    imageControl.Source = LoadBitmap(p);
+                    imgCaption.Text = $"{Path.GetFileName(p)} · {allTopics[currentTopic - 1].Title}";
+                }
+                catch (Exception ex)
+                {
+                    imgCaption.Text = "Rasmni yuklashda xatolik: " + ex.Message;
+                }
+            }
+
+            if (files.Length > 1)
+            {
+                var selectorWrap = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) };
+                for (int f = 0; f < files.Length; f++)
+                {
+                    int idx = f;
+                    var btn = new Button
+                    {
+                        Content = $"Rasm {f + 1}: {Path.GetFileName(files[f])}",
+                        Background = new SolidColorBrush(Color.FromRgb(30, 48, 70)),
+                        Foreground = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!,
+                        Padding = new Thickness(12, 6, 12, 6),
+                        Margin = new Thickness(0, 0, 8, 8),
+                        Cursor = Cursors.Hand
+                    };
+                    btn.Click += (_, _) =>
+                    {
+                        selectedImgIndex = idx;
+                        UpdateDisplayedImage();
+                    };
+                    selectorWrap.Children.Add(btn);
+                }
+                galleryContainer.Children.Add(selectorWrap);
+            }
+
+            var imgStack = new StackPanel();
+            imgStack.Children.Add(topBar);
+            imgStack.Children.Add(imageControl);
+            imgBorder.Child = imgStack;
+            galleryContainer.Children.Add(imgBorder);
+
+            UpdateDisplayedImage();
+            contentHost.Children.Add(galleryContainer);
+        }
+
+        void RenderInteractiveBoard()
+        {
+            // Container Grid with 2 columns: Left (Interactive Diagram / Flow), Right (Interactive Scenario & Worked Example)
+            var grid = new Grid { Margin = new Thickness(0, 4, 0, 16) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.15, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.0, GridUnitType.Star) });
+
+            var diagram = new StackPanel();
+            var details = new StackPanel();
+
+            // 1st Level Surfaces for SmokeTests compatibility (Left = diagram, Right = details)
+            var left = BoardSurface(diagram, "#D80F1E2E", "#403ED1C8");
+            left.Margin = new Thickness(0, 0, 14, 0);
+
+            var right = BoardSurface(details, "#ED131D33", "#4A7C6BD6");
+            Grid.SetColumn(right, 1);
+
+            grid.Children.Add(left);
+            grid.Children.Add(right);
+            contentHost.Children.Add(grid);
+
+            BuildOriginalBoardContent(board, diagram, details);
+        }
+    }
+
+    private void BuildOriginalBoardContent(VisualLessons.Board board, StackPanel diagram, StackPanel details)
+    {
 
         // Header Section in Diagram
         var headerDock = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
